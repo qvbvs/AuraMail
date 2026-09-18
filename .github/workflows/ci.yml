@@ -22,6 +22,8 @@ jobs:
   test-and-build:
     name: Build & Test (${{ matrix.target-name }})
     runs-on: ${{ matrix.os }}
+    env:
+      GYP_MSVS_VERSION: '2022'
     strategy:
       fail-fast: false
       matrix:
@@ -40,10 +42,6 @@ jobs:
         with:
           node-version: 24.x
           cache: 'npm'
-
-      - name: Configure Visual Studio 2022 (Windows)
-        if: runner.os == 'Windows'
-        run: npm config set msvs_version 2022
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
