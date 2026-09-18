@@ -90,14 +90,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $releaseType = "release"
-          if ("${{ github.ref_type }}" -ne "tag" -or "${{ github.event.inputs.draft }}" -eq "true") {
-            $releaseType = "draft"
+          if ("${{ github.event.inputs.draft }}" -eq "true") {
+            npx electron-builder --win --publish always --config.publish.releaseType=draft
           } elseif ("${{ github.event.inputs.prerelease }}" -eq "true") {
-            $releaseType = "prerelease"
+            npx electron-builder --win --publish always --config.publish.releaseType=prerelease
+          } else {
+            npx electron-builder --win --publish always
           }
-          Write-Host "Publishing Windows release as: $releaseType"
-          npx electron-builder --win --publish always -c.publish.releaseType=$releaseType
 
       - name: Package & Publish to GitHub Releases (Linux)
         if: runner.os == 'Linux'
@@ -105,14 +104,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          RELEASE_TYPE="release"
-          if [ "${{ github.ref_type }}" != "tag" ] || [ "${{ github.event.inputs.draft }}" = "true" ]; then
-            RELEASE_TYPE="draft"
+          if [ "${{ github.event.inputs.draft }}" = "true" ]; then
+            npx electron-builder --linux --publish always --config.publish.releaseType=draft
           elif [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
-            RELEASE_TYPE="prerelease"
+            npx electron-builder --linux --publish always --config.publish.releaseType=prerelease
+          else
+            npx electron-builder --linux --publish always
           fi
-          echo "Publishing Linux release as: $RELEASE_TYPE"
-          npx electron-builder --linux --publish always -c.publish.releaseType=$RELEASE_TYPE
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

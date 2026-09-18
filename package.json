@@ -21,7 +21,7 @@
     "build:linux": "electron-vite build && electron-builder --linux",
     "build:all": "electron-vite build && electron-builder --win --linux",
     "release": "electron-vite build && electron-builder --win --publish always",
-    "release:draft": "electron-vite build && electron-builder --win --publish always -c.publish.releaseType=draft",
+    "release:draft": "electron-vite build && electron-builder --win --publish always --config.publish.releaseType=draft",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "lint": "eslint . --ext .ts,.tsx"
