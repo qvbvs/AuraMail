@@ -1,530 +1,161 @@
 <div align="center">
 
-# ⚡ AuraMail
+# AuraMail
 
-### A private, modern email client built for desktop.
+**A private, local-first email client for the desktop.**
 
-Fast. Secure. Local-first.
-
-Built with **Electron**, **React**, **TypeScript** and **SQLCipher** for a modern desktop email experience without sacrificing privacy.
-
-<br />
-
-[![Version](https://img.shields.io/badge/version-0.1.0-6366f1?style=for-the-badge)](https://github.com/qvbvs/auramail/releases)
-[![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge\&logo=windows\&logoColor=white)](https://github.com/qvbvs/auramail)
-[![Linux](https://img.shields.io/badge/Linux-supported-FCC624?style=for-the-badge\&logo=linux\&logoColor=black)](https://github.com/qvbvs/auramail)
-[![Node](https://img.shields.io/badge/Node.js-24%2B-339933?style=for-the-badge\&logo=node.js\&logoColor=white)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/license-MIT-10b981?style=for-the-badge)](./LICENSE)
-
-<br />
-
-**[Features](#-features)** · **[Preview](#-preview)** · **[Architecture](#-architecture)** · **[Tech Stack](#-technology-stack)** · **[Installation](#-installation)** · **[Security](#-security)**
+[![Release](https://img.shields.io/github/v/release/qvbvs/auramail?style=flat-square&color=6366f1)](https://github.com/qvbvs/auramail/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-333333?style=flat-square)](#installation)
+[![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 
 </div>
 
-<br />
+<br>
+
+<p align="center">
+  <img src="./docs/screenshots/screenshot-dark.png" width="100%" alt="AuraMail" />
+</p>
 
 ---
 
-## ✦ What is AuraMail?
+## About
 
-AuraMail is a **native desktop email client for Windows and Linux** designed around three principles:
+AuraMail is a native email client for Windows and Linux, built around **privacy, performance, and productivity**. Your mail lives locally — encrypted, searchable offline, and free of any unnecessary cloud layer.
 
-**Privacy · Performance · Productivity**
+Built with **Electron**, **React**, **TypeScript**, and **SQLCipher**.
 
-Instead of treating your mailbox as a cloud-only interface, AuraMail keeps your data and search capabilities available locally while using modern desktop security mechanisms to protect sensitive information.
+## Features
 
-No unnecessary cloud layer.
-No browser tab.
-No compromise between usability and privacy.
+- **Encrypted by default** — SQLCipher (AES‑256) database, credentials stored via the OS keychain (DPAPI / Secret Service / KWallet)
+- **Real-time sync** — IMAP IDLE push, automatic reconnect, sleep/wake recovery
+- **Offline search** — full-text search across your mailbox via SQLite FTS5
+- **Rich composer** — Tiptap editor with checklists, code blocks, send later, and snooze
+- **One workspace** — integrated calendar, contact timeline, thread notes, automation rules
+- **Keyboard-first** — global command palette (`Ctrl K`) and full keyboard navigation
+- **Multi-account** — unified inbox, each account with its own identity and color
+- **Multilingual** — English and Polish interface
 
----
+## Preview
 
-## ✨ Features
+<p align="center">
+  <img src="./docs/screenshots/screenshot-thread.png" width="32%" alt="Thread view" />
+  <img src="./docs/screenshots/screenshot-compose.png" width="32%" alt="Composer" />
+  <img src="./docs/screenshots/screenshot-calendar.png" width="32%" alt="Calendar" />
+</p>
 
-<table>
-<tr>
-<td width="50%" valign="top">
+## Architecture
 
-### 🔐 Privacy by Design
+Isolated Electron processes connected by a secure IPC boundary.
 
-Your mailbox stays under your control.
-
-* SQLCipher encrypted local database
-* AES-256 database encryption
-* OS-backed credential storage
-* Windows DPAPI support
-* Linux Secret Service / Keyring support
-* No account passwords stored in SQLite
-* Secure Electron process isolation
-* Strict Content Security Policy
-
-</td>
-<td width="50%" valign="top">
-
-### ⚡ Real-Time Email
-
-Messages arrive when they arrive.
-
-* IMAP IDLE push
-* Automatic connection recovery
-* Exponential backoff with jitter
-* Sleep / wake recovery
-* Multi-account inbox
-* Thread grouping
-* Offline search with SQLite FTS5
-
-</td>
-</tr>
-
-<tr>
-<td width="50%" valign="top">
-
-### ✍️ Powerful Composer
-
-A modern writing experience for everyday email.
-
-* Rich text editing
-* Tiptap-powered composer
-* Links and formatting
-* Checklists
-* Code blocks
-* Attachments
-* Send Later
-* Snooze
-* Follow-up reminders
-
-</td>
-<td width="50%" valign="top">
-
-### 📅 One Workspace
-
-Everything you need in one desktop application.
-
-* Integrated calendar
-* Contact timeline
-* Thread dossiers
-* CRM notes
-* Automation rules
-* Custom labels
-* Global command palette
-* System tray integration
-* Polish / English interface
-
-</td>
-</tr>
-</table>
-
----
-
-# 🖼️ Preview
-
-<div align="center">
-
-### AuraMail — Dark & Light
-
-<img src="./docs/screenshots/screenshot-dark.png" width="49%" alt="AuraMail Dark Mode" />
-<img src="./docs/screenshots/screenshot-light.png" width="49%" alt="AuraMail Light Mode" />
-
-<br /><br />
-
-### Designed for Real Work
-
-<img src="./docs/screenshots/screenshot-thread.png" width="32%" alt="AuraMail Thread View" />
-<img src="./docs/screenshots/screenshot-compose.png" width="32%" alt="AuraMail Composer" />
-<img src="./docs/screenshots/screenshot-calendar.png" width="32%" alt="AuraMail Calendar" />
-
-</div>
-
----
-
-# 🧩 Core Experience
-
-### 📥 Unified Inbox
-
-Connect multiple IMAP accounts and manage them from a single interface.
-
-Each account can have its own identity, folders and visual color while messages remain organized in one unified workspace.
-
-### 🔎 Instant Offline Search
-
-Search your mailbox even when you're offline.
-
-AuraMail uses **SQLite FTS5** to index subjects, senders and message bodies locally, providing fast search without sending your queries to an external service.
-
-### 🧵 Thread Dossiers
-
-Turn conversations into contextual workspaces.
-
-View correspondence history, contact information, response patterns and internal notes without losing the context of the conversation.
-
-### ⌨️ Keyboard-First Workflow
-
-Power users can navigate the application without constantly reaching for the mouse.
-
-Use:
-
-`Ctrl + K`
-
-to open the global command palette and quickly jump between accounts, folders, searches and actions.
-
----
-
-# 🏗️ Architecture
-
-AuraMail is split into isolated Electron processes with a secure IPC boundary.
-
-```text
-┌─────────────────────────────────────────────────────┐
-│                    AuraMail                         │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Renderer                                           │
-│  ┌───────────────────────────────────────────────┐  │
-│  │ React 18 · Fluent UI · Tailwind · Zustand    │  │
-│  └───────────────────────┬───────────────────────┘  │
-│                          │                           │
-│                    Secure IPC                       │
-│                          │                           │
-│  ┌───────────────────────▼───────────────────────┐  │
-│  │ Electron Main Process                         │  │
-│  │                                               │  │
-│  │ Mail · SMTP · Sync · Calendar · Scheduler    │  │
-│  │ Database · Security · Tray · Settings        │  │
-│  └───────────────┬───────────────────┬───────────┘  │
-│                  │                   │              │
-│          ┌───────▼───────┐   ┌──────▼─────────┐    │
-│          │   SQLCipher   │   │   OS Keychain  │    │
-│          │   SQLite      │   │                │    │
-│          └───────────────┘   └────────────────┘    │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+```
+Renderer  (React · Fluent UI · Tailwind · Zustand)
+    │
+  secure IPC
+    │
+Main process  (Mail · SMTP · Sync · Calendar · Scheduler)
+    │
+ ┌──┴───────┐
+ SQLCipher   OS Keychain
 ```
 
-### Project Structure
+<sub>Full breakdown in <a href="./ARCHITECTURE.md">ARCHITECTURE.md</a>.</sub>
 
-```text
-src/
-├── main/
-│   ├── mail/          # IMAP, IDLE, sync, threading, rules
-│   ├── smtp/          # Outgoing email
-│   ├── database/      # SQLCipher + migrations
-│   ├── security/      # Encryption + credential storage
-│   ├── calendar/      # Calendar repository
-│   ├── scheduler/     # Send Later, snooze, follow-ups
-│   ├── settings/      # Application settings
-│   ├── tray/          # System tray
-│   └── ipc/            # Secure IPC handlers
-│
-├── preload/
-│   └── ...             # Secure context bridge
-│
-├── renderer/
-│   └── src/
-│       ├── components/
-│       ├── state/
-│       ├── i18n/
-│       └── theme/
-│
-└── shared/
-    └── ...              # Shared types and IPC contracts
-```
+## Tech stack
 
-For deeper technical documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+|  |  |
+|---|---|
+| Desktop | Electron 33 |
+| Language | TypeScript 5 |
+| UI | React 18 · Fluent UI · Tailwind CSS |
+| Mail | IMAPFlow · Nodemailer · MailParser |
+| Storage | SQLite + SQLCipher · FTS5 |
+| Editor | Tiptap |
+| State | Zustand |
+| Credentials | Keytar · Electron `safeStorage` |
+| Testing | Vitest · Playwright |
 
----
+## Installation
 
-# 🛠️ Technology Stack
-
-| Area            | Technology                         |
-| :-------------- | :--------------------------------- |
-| **Desktop**     | Electron 33                        |
-| **Language**    | TypeScript 5                       |
-| **Frontend**    | React 18                           |
-| **UI**          | Fluent UI + Tailwind CSS           |
-| **Mail**        | IMAPFlow + Nodemailer + MailParser |
-| **Database**    | SQLite + SQLCipher                 |
-| **Search**      | SQLite FTS5                        |
-| **Editor**      | Tiptap                             |
-| **State**       | Zustand                            |
-| **Validation**  | Zod                                |
-| **Credentials** | Keytar + Electron safeStorage      |
-| **Testing**     | Vitest + Playwright                |
-| **Build**       | electron-vite + electron-builder   |
-
----
-
-# 🔒 Security
-
-Security is part of AuraMail's architecture rather than an optional feature.
-
-### Local Database
-
-Email data is stored in a local **SQLCipher-encrypted SQLite database** using AES-256 encryption.
-
-### Encryption Key
-
-The database encryption key is generated per installation and protected using Electron's `safeStorage`.
-
-| Platform | Protection                               |
-| :------- | :--------------------------------------- |
-| Windows  | Windows DPAPI                            |
-| Linux    | Secret Service / GNOME Keyring / KWallet |
-
-### Account Credentials
-
-Mailbox passwords and authentication tokens are stored using the operating system's credential manager through `keytar`.
-
-They are **not stored inside the application database**.
-
-### Electron Hardening
-
-AuraMail uses:
-
-```text
-contextIsolation: true
-sandbox: true
-nodeIntegration: false
-```
-
-External links are opened through the system browser rather than inside the application.
-
-For security-related details and vulnerability reporting, see [SECURITY.md](./SECURITY.md).
-
----
-
-# 🐧 Linux
-
-AuraMail supports modern Linux desktop environments including:
-
-* GNOME
-* KDE Plasma
-* XFCE
-* Cinnamon
-* Other freedesktop-compatible environments
-
-### Supported
-
-**Display**
-
-X11 and Wayland
-
-**Secure Storage**
-
-Secret Service, GNOME Keyring and KWallet
-
-**Notifications**
-
-freedesktop notification specification
-
-**System Tray**
-
-AppIndicator / StatusNotifierItem
-
-**Power Management**
-
-Automatic IMAP reconnection after suspend and resume
-
-### Dependencies
-
-#### Debian / Ubuntu / Mint / Pop!_OS
-
-```bash
-sudo apt install build-essential libsecret-1-dev python3
-```
-
-#### Fedora / RHEL
-
-```bash
-sudo dnf install make gcc-c++ libsecret-devel python3
-```
-
-#### Arch / Manjaro
-
-```bash
-sudo pacman -S base-devel libsecret python
-```
-
----
-
-# 🚀 Installation
-
-## Requirements
-
-* Windows 10 / 11 64-bit or modern Linux
-* Node.js **24+**
-* Git
-* C/C++ build tools
-* Linux: `libsecret` development libraries
-
-### Clone
+**Requirements:** Node.js 24+, Git, C/C++ build tools (plus `libsecret` dev headers on Linux)
 
 ```bash
 git clone https://github.com/qvbvs/auramail.git
 cd auramail
-```
-
-### Install dependencies
-
-```bash
 npm install
-```
-
-### Prepare native modules
-
-```bash
-npm run setup
-```
-
-This prepares Electron and rebuilds native dependencies for the correct Electron ABI.
-
-### Start development mode
-
-```bash
+npm run setup   # rebuilds native modules for Electron's ABI
 npm run dev
 ```
 
-For Linux + Wayland:
+On Wayland: `npm run dev -- --ozone-platform-hint=auto`
+
+<details>
+<summary>Linux dependencies</summary>
+<br>
 
 ```bash
-npm run dev -- --ozone-platform-hint=auto
+# Debian / Ubuntu / Mint / Pop!_OS
+sudo apt install build-essential libsecret-1-dev python3
+
+# Fedora / RHEL
+sudo dnf install make gcc-c++ libsecret-devel python3
+
+# Arch / Manjaro
+sudo pacman -S base-devel libsecret python
 ```
 
----
+Tested on GNOME, KDE Plasma, XFCE and Cinnamon, under both X11 and Wayland.
 
-# ⌨️ Keyboard Shortcuts
+</details>
 
-|              Shortcut              | Action            |
-| :--------------------------------: | ----------------- |
-|   <kbd>Ctrl</kbd> + <kbd>K</kbd>   | Command Palette   |
-|            <kbd>C</kbd>            | New Message       |
-| <kbd>Ctrl</kbd> + <kbd>Enter</kbd> | Send              |
-|           <kbd>Esc</kbd>           | Close active view |
-|   <kbd>Ctrl</kbd> + <kbd>,</kbd>   | Settings          |
-|            <kbd>E</kbd>            | Archive           |
-|          <kbd>Delete</kbd>         | Move to Trash     |
-|            <kbd>S</kbd>            | Star / Unstar     |
+## Security
 
----
+- Mail data is stored in a local **SQLCipher-encrypted** SQLite database (AES-256)
+- The encryption key is protected per-install via Electron's `safeStorage` (Windows DPAPI / Linux Secret Service)
+- Account credentials live in the OS credential manager via `keytar` — never in the app database
+- Hardened Electron: `contextIsolation`, `sandbox`, no `nodeIntegration`; external links open in the system browser
 
-# 📦 Build
+Found a vulnerability? See [SECURITY.md](./SECURITY.md).
 
-### Type checking
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl K` | Command palette |
+| `C` | New message |
+| `Ctrl Enter` | Send |
+| `E` | Archive |
+| `S` | Star / unstar |
+| `Delete` | Move to trash |
+| `Esc` | Close active view |
+
+## Build
 
 ```bash
-npm run typecheck
+npm run typecheck   # type checking
+npm test            # tests
+npm run lint        # lint
+
+npm run build:win     # Windows
+npm run build:linux   # Linux
+npm run build:all     # all platforms
 ```
 
-### Tests
+Artifacts land in `dist/` — `.exe`/NSIS on Windows, `.AppImage`/`.deb`/`.rpm` on Linux.
 
-```bash
-npm test
-```
+## Roadmap
 
-### Lint
+- [ ] Advanced automation rules
+- [ ] Additional calendar integrations
+- [ ] Improved contact management
+- [ ] More customization options
+- [ ] Extended keyboard workflows
 
-```bash
-npm run lint
-```
+## Contributing
 
-### Production build
-
-```bash
-npm run build
-```
-
-### Windows
-
-```bash
-npm run build:win
-```
-
-### Linux
-
-```bash
-npm run build:linux
-```
-
-### All platforms
-
-```bash
-npm run build:all
-```
-
-### Release
-
-```bash
-npm run release
-```
-
-Build artifacts are generated inside:
-
-```text
-dist/
-```
-
-Supported distribution formats include:
-
-```text
-Windows
-└── .exe / NSIS
-
-Linux
-├── .AppImage
-├── .deb
-└── .rpm
-```
-
----
-
-# 🗺️ Roadmap
-
-AuraMail is actively evolving.
-
-Planned improvements include:
-
-* [ ] More advanced automation rules
-* [ ] Additional calendar integrations
-* [ ] Improved contact management
-* [ ] More customization options
-* [ ] Performance improvements
-* [ ] Additional localization
-* [ ] Extended keyboard workflows
-
----
-
-# 🤝 Contributing
-
-Contributions, ideas and bug reports are welcome.
-
-Before opening a pull request, please read:
-
-**[CONTRIBUTING.md](./CONTRIBUTING.md)**
-
-For security vulnerabilities, please follow the process described in:
-
-**[SECURITY.md](./SECURITY.md)**
-
----
-
-# 📄 License
-
-AuraMail is released under the **MIT License**.
-
-Copyright © 2026 **qvbvs**
+Contributions and bug reports are welcome — please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
 
 ---
 
 <div align="center">
-
-### ⚡ AuraMail
-
-**Your inbox. Your device. Your data.**
-
-Built with privacy and performance in mind.
-
-<br />
-
-[GitHub](https://github.com/qvbvs/auramail) · [Releases](https://github.com/qvbvs/auramail/releases) · [Security](./SECURITY.md)
-
+<sub>MIT © 2026 qvbvs · <a href="https://github.com/qvbvs/auramail">GitHub</a> · <a href="https://github.com/qvbvs/auramail/releases">Releases</a></sub>
 </div>
