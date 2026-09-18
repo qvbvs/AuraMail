@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: 'Publish as draft release'
+        required: false
+        type: boolean
+        default: false
+      prerelease:
+        description: 'Publish as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-release:
+    name: Build & Release (${{ matrix.target-name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target-name: Windows
+            platform-flag: --win
+          - os: ubuntu-latest
+            target-name: Linux
+            platform-flag: --linux
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          cache: 'npm'
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsecret-1-dev rpm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup native modules and Electron binary
+        run: npm run setup
+
+      - name: Run TypeScript typecheck
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm run test
+
+      - name: Build frontend & main bundles
+        run: npx electron-vite build
+
+      - name: Package & Publish to GitHub Releases (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ("${{ github.event.inputs.draft }}" -eq "true") {
+            npx electron-builder --win --publish always -c.publish.releaseType=draft
+          } elseif ("${{ github.event.inputs.prerelease }}" -eq "true") {
+            npx electron-builder --win --publish always -c.publish.releaseType=prerelease
+          } else {
+            npx electron-builder --win --publish always
+          }
+
+      - name: Package & Publish to GitHub Releases (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.draft }}" = "true" ]; then
+            npx electron-builder --linux --publish always -c.publish.releaseType=draft
+          elif [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
+            npx electron-builder --linux --publish always -c.publish.releaseType=prerelease
+          else
+            npx electron-builder --linux --publish always
+          fi

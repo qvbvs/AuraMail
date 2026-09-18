@@ -1,0 +1,71 @@
+/* ==========================================================================
+   AuraMail - ProseMirror / Tiptap Rich Text Editor Styling
+   ========================================================================== */
+
+.ProseMirror {
+  min-height: 180px;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  padding: var(--space-4) var(--space-5);
+  cursor: text;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: var(--text-dimmed);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.5em;
+}
+
+.ProseMirror li {
+  margin-bottom: 0.25em;
+}
+
+.ProseMirror a {
+  color: var(--accent-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid var(--border-hover);
+  padding-left: 0.8rem;
+  margin-left: 0;
+  margin-right: 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.ProseMirror pre {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  padding: 0.5rem 0.75rem;
+}
+
+.ProseMirror code {
+  background: var(--bg-subtle);
+  border-radius: var(--radius-xs);
+  font-size: 0.85em;
+  padding: 0.15em 0.3em;
+  font-family: var(--font-mono);
+}

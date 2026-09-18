@@ -1,0 +1,119 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Production & Build output
+dist/
+dist-electron/
+dist-ssr/
+out/
+release/
+build-artifacts/
+builder-debug.yml
+builder-effective-config.yaml
+*.blockmap
+
+# Instalatory i pliki binarne (jeśli wygenerowane w głównym katalogu)
+*.exe
+*.msi
+*.dmg
+*.pkg
+*.deb
+*.rpm
+*.AppImage
+
+# Runtime userData i katalogi tymczasowe (baza SQLCipher, klucz szyfrujący, cache Chromium) —
+# generowane lokalnie przy uruchomieniu i testach e2e, nigdy nie commitować (dane pocztowe + sekrety).
+.tmp-user-data/
+.tmp-user-data*/
+.tmp-*/
+.tmp/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Bazy danych (SQLite / SQLCipher) i pliki pomocnicze WAL/SHM
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Klucze szyfrujące, certyfikaty i sekrety
+*.key
+*.key.enc
+*.pem
+*.crt
+*.pfx
+*.p12
+
+# Środowisko i konfiguracje lokalne
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logi & Crash Dumps
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.dmp
+Crashpad/
+
+# Cache kompilacji i bundlerów (TypeScript, ESLint, Vite, Vitest)
+*.tsbuildinfo
+*.tsbuildinfo.*
+.eslintcache
+.stylelintcache
+.vite/
+.vitest/
+
+# Testy i raporty (Vitest, Playwright)
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Zrzuty ekranu ze skryptów e2e/wizualnych (nie dotyczy docs/screenshots)
+scripts/*.png
+scripts/*.jpg
+scripts/*.jpeg
+scripts/*.webp
+
+# Edytory / IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
+# Pliki systemowe OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+ehthumbs_vista.db
+Thumbs.db
+Thumbs.db:encryptable
+desktop.ini
+$RECYCLE.BIN/

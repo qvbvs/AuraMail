@@ -1,0 +1,366 @@
+/* ==========================================================================
+   Aura Mail Design Tokens & System Variables (Light & Dark Mode)
+   Minimalizm Technologiczny / Linear & Superhuman ergonomics
+   ========================================================================== */
+
+:root {
+  /* System font stack */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-headline: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  /* Font sizes */
+  --font-size-2xs: 10px;
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 15px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 22px;
+  --font-size-3xl: 28px;
+
+  /* Font weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-10: 20px;
+  --space-12: 24px;
+  --space-16: 32px;
+
+  /* Border Radii (Soft, 1) */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+
+  /* Z-Index scale */
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-dropdown: 50;
+  --z-modal-backdrop: 100;
+  --z-modal: 101;
+  --z-tooltip: 200;
+}
+
+/* ==========================================================================
+   LIGHT MODE TOKENS (Aura Mail Default)
+   ========================================================================== */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces & Backgrounds */
+  --bg-background: #faf8ff;
+  --bg-canvas: #f8fafc;
+  --bg-surface: #faf8ff;
+  --surface-dim: #d2d9f4;
+  --surface-bright: #faf8ff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f2f3ff;
+  --surface-container: #eaedff;
+  --surface-container-high: #e2e7ff;
+  --surface-container-highest: #dae2fd;
+  --surface-variant: #dae2fd;
+  --surface-canvas: #f8fafc;
+  --surface-sidebar: #f8fafc;
+  --surface-panel: #ffffff;
+  --surface-elevated: #ffffff;
+  --surface-hover: #f1f5f9;
+  --bg-subtle: #f2f3ff;
+  --bg-card: #ffffff;
+
+  /* Typography */
+  --text-on-surface: #131b2e;
+  --text-on-surface-variant: #464555;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-dimmed: #94a3b8;
+  --text-inverse: #ffffff;
+  --inverse-surface: #283044;
+  --inverse-on-surface: #eef0ff;
+
+  /* Borders */
+  --border-subtle: #e2e8f0;
+  --border-default: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --border-focus: #4f46e5;
+  --border-strong: #94a3b8;
+  --outline: #777587;
+  --outline-variant: #c7c4d8;
+
+  /* Brand / Primary Accent (Deep Indigo) */
+  --primary: #3525cd;
+  --primary-container: #4f46e5;
+  --on-primary: #ffffff;
+  --on-primary-container: #dad7ff;
+  --primary-fixed: #e2dfff;
+  --primary-fixed-dim: #c3c0ff;
+  --on-primary-fixed: #0f0069;
+  --on-primary-fixed-variant: #3323cc;
+  --accent-primary: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-active: #3730a3;
+  --accent-subtle: rgba(79, 70, 229, 0.08);
+  --accent-subtle-hover: rgba(79, 70, 229, 0.14);
+  --accent-border: rgba(79, 70, 229, 0.22);
+  --accent-text: #4338ca;
+  --accent-contrast: #ffffff;
+
+  /* Secondary (Ocean / Electric Sky) */
+  --secondary: #006591;
+  --on-secondary: #ffffff;
+  --secondary-container: #39b8fd;
+  --on-secondary-container: #004666;
+  --secondary-fixed: #c9e6ff;
+  --secondary-fixed-dim: #89ceff;
+  --on-secondary-fixed: #001e2f;
+  --on-secondary-fixed-variant: #004c6e;
+
+  /* Tertiary */
+  --tertiary: #3130c0;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #4b4dd8;
+  --on-tertiary-container: #d9d8ff;
+  --tertiary-fixed: #e1e0ff;
+  --tertiary-fixed-dim: #c0c1ff;
+
+  /* Status Colors */
+  --status-success: #10b981;
+  --color-success: #10b981;
+  --color-success-subtle: #ecfdf5;
+  --color-success-border: #a7f3d0;
+  --color-success-text: #047857;
+
+  --status-warning: #f59e0b;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-warning-text: #b45309;
+
+  --status-error: #ef4444;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+  --color-danger: #ef4444;
+  --color-danger-subtle: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-danger-text: #b91c1c;
+
+  --color-info: #0284c7;
+  --color-info-subtle: #f0f9ff;
+  --color-info-border: #bae6fd;
+  --color-info-text: #0369a1;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+  --shadow-xl: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+  --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06);
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+/* ==========================================================================
+   DARK MODE TOKENS (Aura Mail Dark)
+   ========================================================================== */
+[data-theme="dark"],
+.dark {
+  color-scheme: dark;
+
+  /* Surfaces & Backgrounds - Deep Slate / Immersion */
+  --bg-background: #0b0f19;
+  --bg-canvas: #0b0f19;
+  --bg-surface: #0f131d;
+  --surface-dim: #0f131d;
+  --surface-bright: #353944;
+  --surface-container-lowest: #0a0e18;
+  --surface-container-low: #131b2e;
+  --surface-container: #171f30;
+  --surface-container-high: #262a35;
+  --surface-container-highest: #313540;
+  --surface-variant: #313540;
+  --surface-canvas: #0b0f19;
+  --surface-sidebar: #0f172a;
+  --surface-panel: #182234;
+  --surface-elevated: #1e293b;
+  --surface-hover: #253347;
+  --bg-subtle: #131b2e;
+  --bg-card: #182234;
+
+  /* Typography */
+  --text-on-surface: #f1f5f9;
+  --text-on-surface-variant: #94a3b8;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dimmed: #475569;
+  --text-inverse: #0f172a;
+  --inverse-surface: #dfe2f1;
+  --inverse-on-surface: #2c303b;
+
+  /* Borders (Ghost Borders) */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-hover: #334155;
+  --border-focus: #818cf8;
+  --border-strong: #334155;
+  --outline: #475569;
+  --outline-variant: #334155;
+
+  /* Brand / Primary Accent (Indigo Glow) */
+  --primary: #818cf8;
+  --primary-container: #4f46e5;
+  --on-primary: #ffffff;
+  --on-primary-container: #ffffff;
+  --primary-fixed: #312e81;
+  --primary-fixed-dim: #c0c1ff;
+  --on-primary-fixed: #e0e7ff;
+  --on-primary-fixed-variant: #c7d2fe;
+  --accent-primary: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-active: #4f46e5;
+  --accent-subtle: rgba(99, 102, 241, 0.15);
+  --accent-subtle-hover: rgba(99, 102, 241, 0.22);
+  --accent-border: rgba(99, 102, 241, 0.35);
+  --accent-text: #a5b4fc;
+  --accent-contrast: #ffffff;
+
+  /* Secondary */
+  --secondary: #bdc2ff;
+  --on-secondary: #131e8c;
+  --secondary-container: #1e293b;
+  --on-secondary-container: #cbd5e1;
+  --secondary-fixed: #1e293b;
+  --secondary-fixed-dim: #bdc2ff;
+
+  /* Tertiary */
+  --tertiary: #89ceff;
+  --on-tertiary: #00344d;
+  --tertiary-container: #009ada;
+  --on-tertiary-container: #002d43;
+
+  /* Status Colors */
+  --status-success: #10b981;
+  --color-success: #10b981;
+  --color-success-subtle: rgba(16, 185, 129, 0.14);
+  --color-success-border: rgba(16, 185, 129, 0.28);
+  --color-success-text: #6ee7b7;
+
+  --status-warning: #f59e0b;
+  --color-warning: #f59e0b;
+  --color-warning-subtle: rgba(245, 158, 11, 0.14);
+  --color-warning-border: rgba(245, 158, 11, 0.28);
+  --color-warning-text: #fcd34d;
+
+  --status-error: #ef4444;
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+  --color-danger: #f43f5e;
+  --color-danger-subtle: rgba(244, 63, 94, 0.14);
+  --color-danger-border: rgba(244, 63, 94, 0.28);
+  --color-danger-text: #fda4af;
+
+  --color-info: #38bdf8;
+  --color-info-subtle: rgba(56, 189, 248, 0.14);
+  --color-info-border: rgba(56, 189, 248, 0.28);
+  --color-info-text: #7dd3fc;
+
+  /* Shadows for Dark Mode */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 8px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 20px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 24px 32px -5px rgba(0, 0, 0, 0.7), 0 8px 12px -6px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #23293d;
+  --scrollbar-thumb-hover: #374161;
+}
+
+/* Base Global Resets */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  color: var(--text-on-surface);
+  background-color: var(--bg-background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+}
+
+/* Material Symbols configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-block;
+}
+
+.material-symbols-outlined.fill {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Focus rings */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}

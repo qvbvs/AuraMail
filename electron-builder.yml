@@ -1,0 +1,37 @@
+appId: com.salanaczas.auramail
+productName: AuraMail
+directories:
+  buildResources: build
+publish:
+  provider: github
+  owner: qvbvs
+  repo: auramail
+  releaseType: release
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+asarUnpack:
+  - resources/**
+win:
+  executableName: auramail
+  target: nsis
+nsis:
+  artifactName: ${name}-${version}-setup.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  createDesktopShortcut: always
+linux:
+  executableName: auramail
+  category: Network;Email;
+  target:
+    - target: AppImage
+    - target: deb
+    - target: rpm
+  desktop:
+    Name: AuraMail
+    Comment: Secure Next-Gen Email Client
+    Categories: Network;Email;Office;
+    StartupWMClass: auramail
+npmRebuild: true
