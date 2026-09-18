@@ -23,6 +23,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 linux:
+  maintainer: qvbvs <jakubwalecki25@gmail.com>
   executableName: auramail
   category: Network;Email;
   target:

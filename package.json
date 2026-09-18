@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "description": "AuraMail — nowoczesny klient poczty (Electron)",
   "main": "./out/main/index.js",
-  "author": "qvbvs",
+  "author": {
+    "name": "qvbvs",
+    "email": "jakubwalecki25@gmail.com"
+  },
   "license": "MIT",
   "private": true,
   "repository": {

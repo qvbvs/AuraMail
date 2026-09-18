@@ -53,7 +53,11 @@ for (const { name: pkg, target } of PACKAGES) {
   const pkgDir = join(process.cwd(), 'node_modules', pkg)
   console.log(`\n== ${pkg}${target ? ` (target electron ${target})` : ''} ==`)
 
-  const targetArgs = target ? ['--target=' + target, '--dist-url=https://electronjs.org/headers', '--runtime=electron'] : []
+  const vsArgs = process.platform === 'win32' ? ['--msvs_version=2022'] : []
+  const targetArgs = [
+    ...(target ? ['--target=' + target, '--dist-url=https://electronjs.org/headers', '--runtime=electron'] : []),
+    ...vsArgs
+  ]
 
   console.log('configure...')
   execFileSync(process.execPath, [nodeGypBin, 'configure', '--release', ...targetArgs], {
