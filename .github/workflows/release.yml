@@ -55,7 +55,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libsecret-1-dev rpm
+          sudo apt-get install -y libsecret-1-dev rpm libfuse2 || sudo apt-get install -y libsecret-1-dev rpm libfuse2t64 || true
 
       - name: Install dependencies
         run: npm ci
@@ -78,13 +78,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ("${{ github.event.inputs.draft }}" -eq "true") {
-            npx electron-builder --win --publish always -c.publish.releaseType=draft
+          $releaseType = "release"
+          if ("${{ github.ref_type }}" -ne "tag" -or "${{ github.event.inputs.draft }}" -eq "true") {
+            $releaseType = "draft"
           } elseif ("${{ github.event.inputs.prerelease }}" -eq "true") {
-            npx electron-builder --win --publish always -c.publish.releaseType=prerelease
-          } else {
-            npx electron-builder --win --publish always
+            $releaseType = "prerelease"
           }
+          Write-Host "Publishing Windows release as: $releaseType"
+          npx electron-builder --win --publish always -c.publish.releaseType=$releaseType
 
       - name: Package & Publish to GitHub Releases (Linux)
         if: runner.os == 'Linux'
@@ -92,10 +93,25 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "${{ github.event.inputs.draft }}" = "true" ]; then
-            npx electron-builder --linux --publish always -c.publish.releaseType=draft
+          RELEASE_TYPE="release"
+          if [ "${{ github.ref_type }}" != "tag" ] || [ "${{ github.event.inputs.draft }}" = "true" ]; then
+            RELEASE_TYPE="draft"
           elif [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
-            npx electron-builder --linux --publish always -c.publish.releaseType=prerelease
-          else
-            npx electron-builder --linux --publish always
+            RELEASE_TYPE="prerelease"
           fi
+          echo "Publishing Linux release as: $RELEASE_TYPE"
+          npx electron-builder --linux --publish always -c.publish.releaseType=$RELEASE_TYPE
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: auramail-${{ matrix.target-name }}
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/latest*.yml
+          if-no-files-found: ignore
