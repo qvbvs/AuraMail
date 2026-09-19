@@ -172,13 +172,25 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
         <h2 className="font-headline text-base font-bold text-slate-900 dark:text-white tracking-tight">
           {senderName}
         </h2>
-        <p className="font-mono text-xs text-primary dark:text-indigo-400 font-semibold mt-0.5">
+        <button
+          type="button"
+          onClick={() => window.mailapp.shell.openExternal(`https://${senderDomain}`)}
+          title={t('contactDossier.open_domain_tooltip', { domain: senderDomain })}
+          className="font-mono text-xs text-primary dark:text-indigo-400 font-semibold mt-0.5 hover:underline cursor-pointer"
+        >
           {senderDomain}
-        </p>
+        </button>
 
         <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400">
           <span className="material-symbols-outlined text-[14px] text-indigo-500">domain</span>
-          <span>{senderDomain}</span>
+          <button
+            type="button"
+            onClick={() => window.mailapp.shell.openExternal(`https://${senderDomain}`)}
+            title={t('contactDossier.open_domain_tooltip', { domain: senderDomain })}
+            className="hover:underline cursor-pointer"
+          >
+            {senderDomain}
+          </button>
           <span>•</span>
           <span className="text-emerald-600 dark:text-emerald-400 font-medium">{t('contactDossier.active')}</span>
         </div>

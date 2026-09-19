@@ -8,7 +8,12 @@ import { closeDb, getDb } from './database'
 import { startScheduler, stopScheduler } from './scheduler'
 import { idleManager } from './mail/idle-manager'
 import { initMainI18n } from './i18n'
+import { syncLoginItemSettings, START_MINIMIZED_ARG } from './system/login-item'
 import log from 'electron-log'
+
+// Ustawione przez system, gdy proces wystartował z autostartu z opcją "zminimalizowana"
+// (patrz src/main/system/login-item.ts) — okno główne wtedy nie pokazuje się na starcie.
+const launchedMinimized = process.argv.includes(START_MINIMIZED_ARG)
 
 // Zabezpieczenie: gdy Electron uruchamiany jest bezpośrednio ze ścieżki do skryptu
 // (np. `electron.exe out/main/index.js`, tak jak w testach), nie zawsze poprawnie
@@ -45,7 +50,9 @@ function createWindow(): BrowserWindow {
     }
   })
 
-  win.on('ready-to-show', () => win.show())
+  win.on('ready-to-show', () => {
+    if (!launchedMinimized) win.show()
+  })
 
   // Synchronizacja stanu zmaksymalizowania oraz fokusu z rendererem dla Caption Buttons i Title Baru
   win.on('maximize', () => {
@@ -136,6 +143,7 @@ if (!gotSingleInstanceLock) {
     mainWindow = createWindow()
     registerIpcHandlers()
     initMainI18n(getDb())
+    syncLoginItemSettings(getDb())
     createTray(mainWindow)
     startScheduler(getDb())
     idleManager.start(getDb())

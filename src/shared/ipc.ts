@@ -289,6 +289,11 @@ export interface UpdateCalendarEventInput {
   color?: string
 }
 
+export interface LoginItemPrefs {
+  openAtLogin: boolean
+  startMinimized: boolean
+}
+
 export type ConnectionState = 'connected' | 'connecting' | 'reconnecting' | 'error' | 'idle'
 
 export interface AccountConnectionStatus {
@@ -356,6 +361,9 @@ export const IPC = {
   windowMinimize: 'window:minimize',
   windowMaximize: 'window:maximize',
   windowClose: 'window:close',
-  windowIsMaximized: 'window:isMaximized'
+  windowIsMaximized: 'window:isMaximized',
+  shellOpenExternal: 'shell:openExternal',
+  systemGetLoginItemPrefs: 'system:getLoginItemPrefs',
+  systemSetLoginItemPrefs: 'system:setLoginItemPrefs'
 } as const
 

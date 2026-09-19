@@ -30,7 +30,8 @@ import type {
   CreateMailRuleInput,
   LabelSummary,
   CreateLabelInput,
-  UpdateLabelInput
+  UpdateLabelInput,
+  LoginItemPrefs
 } from '@shared/ipc'
 
 const api = {
@@ -205,6 +206,14 @@ const api = {
         ipcRenderer.removeListener('tray:open-settings', handler)
       }
     }
+  },
+  shell: {
+    openExternal: (url: string): Promise<void> => ipcRenderer.invoke(IPC.shellOpenExternal, url)
+  },
+  system: {
+    getLoginItemPrefs: (): Promise<LoginItemPrefs> => ipcRenderer.invoke(IPC.systemGetLoginItemPrefs),
+    setLoginItemPrefs: (prefs: LoginItemPrefs): Promise<void> =>
+      ipcRenderer.invoke(IPC.systemSetLoginItemPrefs, prefs)
   },
   window: {
     minimize: (): Promise<void> => ipcRenderer.invoke(IPC.windowMinimize),

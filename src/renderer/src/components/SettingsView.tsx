@@ -1106,6 +1106,102 @@ function GeneralTab(): JSX.Element {
           ))}
         </div>
       </div>
+
+      <StartupSection />
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------------- */
+/* Sekcja: Uruchamianie z systemem (autostart + start zminimalizowany)     */
+/* ---------------------------------------------------------------------- */
+
+function StartupSection(): JSX.Element {
+  const { t } = useTranslation()
+  const [prefs, setPrefs] = useState<{ openAtLogin: boolean; startMinimized: boolean }>({
+    openAtLogin: false,
+    startMinimized: false
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    window.mailapp.system.getLoginItemPrefs().then((p) => {
+      setPrefs(p)
+      setLoading(false)
+    })
+  }, [])
+
+  async function update(patch: Partial<{ openAtLogin: boolean; startMinimized: boolean }>): Promise<void> {
+    const next = { ...prefs, ...patch }
+    setPrefs(next)
+    await window.mailapp.system.setLoginItemPrefs(next)
+  }
+
+  return (
+    <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-6 shadow-sm space-y-4 border border-border-subtle dark:border-white/[0.06]">
+      <div className="flex items-center gap-2.5">
+        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+          <span className="material-symbols-outlined text-[20px]">power_settings_new</span>
+        </div>
+        <div>
+          <h3 className="font-headline-md text-base text-on-surface dark:text-white font-bold">
+            {t('settings.startup.title', undefined, 'Uruchamianie z systemem')}
+          </h3>
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
+            {t('settings.startup.desc', undefined, 'Ustaw, czy AuraMail ma startować automatycznie razem z systemem.')}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-start justify-between gap-3 pt-1">
+        <div className="space-y-0.5">
+          <span className="text-xs font-semibold text-on-surface dark:text-white">
+            {t('settings.startup.launch_at_login_label', undefined, 'Uruchamiaj przy starcie systemu')}
+          </span>
+          <p className="text-[11px] text-on-surface-variant dark:text-text-muted">
+            {t(
+              'settings.startup.launch_at_login_desc',
+              undefined,
+              'AuraMail wystartuje automatycznie zaraz po zalogowaniu do systemu.'
+            )}
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+          <input
+            type="checkbox"
+            checked={prefs.openAtLogin}
+            disabled={loading}
+            onChange={(e) => update({ openAtLogin: e.target.checked })}
+            className="sr-only peer"
+          />
+          <div className="w-8 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
+        </label>
+      </div>
+
+      <div className={`flex items-start justify-between gap-3 pt-1 transition-opacity ${prefs.openAtLogin ? '' : 'opacity-50'}`}>
+        <div className="space-y-0.5">
+          <span className="text-xs font-semibold text-on-surface dark:text-white">
+            {t('settings.startup.start_minimized_label', undefined, 'Startuj zminimalizowana do zasobnika')}
+          </span>
+          <p className="text-[11px] text-on-surface-variant dark:text-text-muted">
+            {t(
+              'settings.startup.start_minimized_desc',
+              undefined,
+              'Okno nie pojawi się przy starcie — aplikacja pozostanie tylko w zasobniku systemowym (tray).'
+            )}
+          </p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
+          <input
+            type="checkbox"
+            checked={prefs.startMinimized}
+            disabled={loading || !prefs.openAtLogin}
+            onChange={(e) => update({ startMinimized: e.target.checked })}
+            className="sr-only peer"
+          />
+          <div className="w-8 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
+        </label>
+      </div>
     </div>
   )
 }

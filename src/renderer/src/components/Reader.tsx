@@ -87,6 +87,7 @@ export function Reader({
   const [isSendingQuickReply, setIsSendingQuickReply] = useState(false)
   const [labelsMenuOpen, setLabelsMenuOpen] = useState(false)
   const labelsMenuRef = useRef<HTMLDivElement>(null)
+  const bodyIframeRef = useRef<HTMLIFrameElement>(null)
   const autoMarkedIdsRef = useRef<Set<string>>(new Set())
 
   useEffect(() => {
@@ -531,11 +532,28 @@ export function Reader({
       {/* Message Body iframe Container */}
       <div className="flex-1 relative w-full h-full min-h-[300px] overflow-hidden">
         <iframe
+          ref={bodyIframeRef}
           title={t('reader.iframe_title')}
           sandbox="allow-same-origin"
           srcDoc={srcDoc}
           className="absolute inset-0 w-full h-full border-none"
           style={{ backgroundColor: isDark ? '#0f1522' : '#ffffff' }}
+          onLoad={() => {
+            // Sandbox iframe'a nie ma "allow-popups"/"allow-top-navigation" — kliknięcie
+            // linku samo z siebie nic by nie zrobiło. Przechwytujemy klik i przekazujemy
+            // URL do procesu głównego, żeby zawsze otworzył się w systemowej przeglądarce.
+            const doc = bodyIframeRef.current?.contentDocument
+            if (!doc) return
+            doc.addEventListener('click', (event) => {
+              const anchor = (event.target as HTMLElement | null)?.closest('a')
+              const href = anchor?.getAttribute('href')
+              if (!href) return
+              event.preventDefault()
+              if (/^(https?:|mailto:)/i.test(href)) {
+                window.mailapp.shell.openExternal(href)
+              }
+            })
+          }}
         />
       </div>
 

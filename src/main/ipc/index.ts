@@ -1,9 +1,9 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { basename, extname, join } from 'node:path'
 import { z } from 'zod'
 import log from 'electron-log'
-import { IPC } from '@shared/ipc'
+import { IPC, type LoginItemPrefs } from '@shared/ipc'
 import { getDb } from '../database'
 import {
   createAccount,
@@ -36,6 +36,7 @@ import {
 import { updateMessagePinned } from '../mail/messages-repository'
 import { listRules, createRule, setRuleActive, deleteRule } from '../mail/rules-repository'
 import { getSetting, setSetting } from '../settings/settings-repository'
+import { getLoginItemPrefs, applyLoginItemPrefs } from '../system/login-item'
 import { updateTrayLanguage } from '../tray'
 import { sendMessage } from '../smtp/send-message'
 import { listSnoozed, snoozeMessage } from '../mail/snoozed-repository'
@@ -668,6 +669,39 @@ export function registerIpcHandlers(): void {
     withErrorLogging(IPC.windowIsMaximized, (event) => {
       const win = BrowserWindow.fromWebContents(event.sender)
       return win?.isMaximized() ?? false
+    })
+  )
+
+  // Linki z treści maili / kart kontaktów zawsze otwierają się w systemowej
+  // przeglądarce — nigdy wewnątrz okna aplikacji. Walidacja protokołu chroni
+  // przed nadużyciem (np. wywołaniem lokalnego pliku z treści maila).
+  const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:'])
+
+  ipcMain.handle(
+    IPC.shellOpenExternal,
+    withErrorLogging(IPC.shellOpenExternal, (_event, url: string) => {
+      let parsed: URL
+      try {
+        parsed = new URL(url)
+      } catch {
+        return
+      }
+      if (!ALLOWED_EXTERNAL_PROTOCOLS.has(parsed.protocol)) return
+      shell.openExternal(parsed.toString())
+    })
+  )
+
+  ipcMain.handle(
+    IPC.systemGetLoginItemPrefs,
+    withErrorLogging(IPC.systemGetLoginItemPrefs, () => {
+      return getLoginItemPrefs(getDb())
+    })
+  )
+
+  ipcMain.handle(
+    IPC.systemSetLoginItemPrefs,
+    withErrorLogging(IPC.systemSetLoginItemPrefs, (_event, prefs: LoginItemPrefs) => {
+      applyLoginItemPrefs(getDb(), prefs)
     })
   )
 
