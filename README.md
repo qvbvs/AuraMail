@@ -13,7 +13,7 @@
 <br>
 
 <p align="center">
-  <img src="./docs/screenshots/screenshot-dark.png" width="100%" alt="AuraMail" />
+  <img src="./docs/screenshots/preview.png" width="100%" alt="AuraMail" />
 </p>
 
 ---
