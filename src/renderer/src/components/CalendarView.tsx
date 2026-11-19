@@ -73,7 +73,7 @@ export function CalendarView({ onBackToMail, onOpenCompose }: CalendarViewProps)
   const accountId = selectedAccountId || accounts[0]?.id || null
   const { events, load, create, update, remove, error } = useCalendarStore()
 
-  const [mode, setMode] = useState<Mode>('week')
+  const [mode, setMode] = useState<Mode>(() => (window.innerWidth < 768 ? 'day' : 'week'))
   const [cursor, setCursor] = useState(() => new Date())
   const [selectedDay, setSelectedDay] = useState(() => new Date())
   const [form, setForm] = useState<EventForm | null>(null)

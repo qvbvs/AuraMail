@@ -89,7 +89,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
         </button>
       </div>
 
-      <div className="app-no-drag flex-1 min-w-0 max-w-[560px]">
+      <div className="app-no-drag flex-1 min-w-0 max-w-[560px] max-sm:hidden">
         <label className="relative flex items-center h-[30px] rounded bg-sunken focus-within:bg-raised focus-within:shadow-[0_0_0_1px_var(--accent),0_0_0_4px_var(--accent-soft)] transition-shadow">
           <Icon name="search" className="absolute left-2.5 text-ink-3 pointer-events-none" />
           <span className="sr-only">{t('common.search')}</span>
@@ -123,6 +123,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
       <div className="flex-1" />
 
       <div className="flex items-center h-full app-no-drag">
+        <IconButton icon="search" label={t('common.search')} shortcut="Ctrl K" onClick={onOpenCommandPalette} className="sm:hidden" />
         <IconButton
           icon={resolvedTheme === 'dark' ? 'light_mode' : 'dark_mode'}
           label={t('topbar.toggle_theme')}

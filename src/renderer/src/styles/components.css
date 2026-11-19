@@ -85,6 +85,12 @@
   min-height: 0;
 }
 
+/* [hidden] loses to the display rules above; the single-pane phone layout relies on it. */
+.pane-list[hidden],
+.pane-reader[hidden] {
+  display: none;
+}
+
 @media (max-width: 1100px) {
   :root {
     --list-w: 330px;

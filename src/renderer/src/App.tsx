@@ -26,6 +26,15 @@ interface ComposePrefill {
   bodyHtml?: string
 }
 
+/** Preferences chosen in onboarding (and the list sort menu) that shape the first screen. */
+async function applyStartupPreferences(setView?: (v: AppView) => void): Promise<AppView> {
+  const [view, sort] = await Promise.all([window.mailapp?.settings?.get('defaultView'), window.mailapp?.settings?.get('sortOrder')])
+  if (sort === 'date_desc' || sort === 'date_asc' || sort === 'unread_first') useMailStore.setState({ sortOrder: sort })
+  const v: AppView = view === 'calendar' || view === 'files' ? view : 'mail'
+  setView?.(v)
+  return v
+}
+
 export function App(): JSX.Element {
   const { t } = useTranslation()
   const [currentView, setCurrentView] = useState<AppView>('mail')
@@ -73,6 +82,7 @@ export function App(): JSX.Element {
           setShowOnboarding(true)
         } else {
           setShowOnboarding(false)
+          setCurrentView(await applyStartupPreferences())
         }
       } catch {
         setShowOnboarding(false)
@@ -247,6 +257,7 @@ export function App(): JSX.Element {
       <OnboardingWizard
         onComplete={async () => {
           setShowOnboarding(false)
+          await applyStartupPreferences(setCurrentView)
           await useAccountsStore.getState().load()
           const accs = useAccountsStore.getState().accounts
           if (accs.length > 0) {

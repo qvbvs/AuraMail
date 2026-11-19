@@ -8,6 +8,7 @@ import { LabelDialog } from './LabelDialog'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Button, Icon, IconButton } from './ui/Button'
 import { Field, SwitchRow } from './ui/Field'
+import { playNotificationSound } from '../utils/sound'
 import type { AccountSecurity, AccountSummary, BandwidthPoint, FolderSummary, MailRule, MailRuleConditionField, TestConnectionStep, LabelSummary } from '@shared/ipc'
 
 interface SettingsViewProps {
@@ -103,15 +104,21 @@ export function SettingsView({ onBackToMail, onOpenAddAccount }: SettingsViewPro
 function GeneralSection(): JSX.Element {
   const { language, setLanguage, t } = useTranslation()
   const { theme, setTheme } = useTheme()
-  const [notify, setNotify] = useState(true)
-  const [notifyLoaded, setNotifyLoaded] = useState(false)
+  // Boolean settings read by the main process on every sync/notification ('false' = off, default on).
+  const FLAGS = ['notifyNewMail', 'notifyDesktop', 'notifySound', 'notifyPreview', 'autoSyncEnabled'] as const
+  const [flags, setFlags] = useState<Record<(typeof FLAGS)[number], boolean>>({ notifyNewMail: true, notifyDesktop: true, notifySound: true, notifyPreview: true, autoSyncEnabled: true })
+  const [flagsLoaded, setFlagsLoaded] = useState(false)
+  const setFlag = (key: (typeof FLAGS)[number], value: boolean): void => {
+    setFlags((f) => ({ ...f, [key]: value }))
+    window.mailapp.settings.set(key, value ? 'true' : 'false')
+  }
   const [prefs, setPrefs] = useState({ openAtLogin: false, startMinimized: false })
   const [prefsLoaded, setPrefsLoaded] = useState(false)
 
   useEffect(() => {
-    window.mailapp.settings.get('notifyNewMail').then((v) => {
-      setNotify(v !== 'false')
-      setNotifyLoaded(true)
+    Promise.all(FLAGS.map((k) => window.mailapp.settings.get(k))).then((values) => {
+      setFlags(Object.fromEntries(FLAGS.map((k, i) => [k, values[i] !== 'false'])) as typeof flags)
+      setFlagsLoaded(true)
     })
     window.mailapp.system.getLoginItemPrefs().then((p) => {
       setPrefs(p)
@@ -166,16 +173,23 @@ function GeneralSection(): JSX.Element {
       </Block>
 
       <Block title={t('settings.desktop_notifications_title')} description={t('settings.notifications_always_desc')}>
-        <SwitchRow
-          checked={notify}
-          disabled={!notifyLoaded}
-          onChange={(v) => {
-            setNotify(v)
-            window.mailapp.settings.set('notifyNewMail', v ? 'true' : 'false')
-          }}
-          label={t('settings.new_mail_label')}
-          description={t('settings.new_mail_toggle_desc')}
-        />
+        <div className="divide-y divide-line">
+          <SwitchRow checked={flags.notifyNewMail} disabled={!flagsLoaded} onChange={(v) => setFlag('notifyNewMail', v)} label={t('settings.new_mail_label')} description={t('settings.new_mail_toggle_desc')} />
+          <SwitchRow checked={flags.notifyDesktop} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifyDesktop', v)} label={t('onboarding.notifications.desktop_title')} description={t('onboarding.notifications.desktop_desc')} />
+          <SwitchRow checked={flags.notifyPreview} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifyPreview', v)} label={t('onboarding.notifications.preview_title')} description={t('onboarding.notifications.preview_desc')} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <SwitchRow checked={flags.notifySound} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifySound', v)} label={t('onboarding.notifications.sound_title')} description={t('onboarding.notifications.sound_desc')} />
+            </div>
+            <Button size="xs" variant="ghost" icon="volume_up" onClick={() => playNotificationSound()}>
+              {t('onboarding.notifications.test_button')}
+            </Button>
+          </div>
+        </div>
+      </Block>
+
+      <Block title={t('onboarding.sync.title')}>
+        <SwitchRow checked={flags.autoSyncEnabled} disabled={!flagsLoaded} onChange={(v) => setFlag('autoSyncEnabled', v)} label={t('onboarding.sync.autosync_title')} description={t('onboarding.sync.autosync_desc')} />
       </Block>
 
       <Block title={t('settings.startup.title')} description={t('settings.startup.desc')}>

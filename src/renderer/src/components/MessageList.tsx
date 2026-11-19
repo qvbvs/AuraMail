@@ -248,12 +248,16 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
               setMenu({
                 x: r.right - 220,
                 y: r.bottom + 4,
-                items: SORTS.map((s) => ({ key: s, label: t(`messageList.sort.${s}`), icon: s === sortOrder ? 'check' : undefined, onSelect: () => setSortOrder(s) }))
+                items: SORTS.map((s) => ({ key: s, label: t(`messageList.sort.${s}`), icon: s === sortOrder ? 'check' : undefined, onSelect: () => {
+                  setSortOrder(s)
+                  window.mailapp.settings.set('sortOrder', s).catch(() => {})
+                }
+              }))
               })
             }}
           />
         </div>
-        <div className="segmented mt-2.5" role="group" aria-label={t('messageList.filter_label')}>
+        <div className="segmented mt-2.5 max-w-full overflow-x-auto" role="group" aria-label={t('messageList.filter_label')}>
           {FILTERS.map((f) => (
             <button key={f} type="button" aria-pressed={filterTab === f} onClick={() => setFilterTab(f)}>
               {t(`topbar.filter_${f}`)}
