@@ -2,430 +2,300 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useAccountsStore } from '../state/accounts-store'
 import { useMailStore } from '../state/mail-store'
 import { useLabelsStore } from '../state/labels-store'
-import { useTranslation, getLocalizedLabelName } from '../i18n'
+import { useTranslation, getLocalizedLabelName, type Language } from '../i18n'
 import { useTheme, type ThemeMode } from '../theme/ThemeContext'
 import { LabelDialog } from './LabelDialog'
 import { ConfirmDialog } from './ui/ConfirmDialog'
-import { Button } from './ui/Button'
-import type {
-  AccountSecurity,
-  AccountSummary,
-  BandwidthPoint,
-  FolderSummary,
-  MailRule,
-  MailRuleConditionField,
-  TestConnectionStep,
-  LabelSummary
-} from '@shared/ipc'
+import { Button, Icon, IconButton } from './ui/Button'
+import { Field, SwitchRow } from './ui/Field'
+import type { AccountSecurity, AccountSummary, BandwidthPoint, FolderSummary, MailRule, MailRuleConditionField, TestConnectionStep, LabelSummary } from '@shared/ipc'
 
 interface SettingsViewProps {
   onBackToMail: () => void
   onOpenAddAccount: () => void
 }
 
-type SettingsTab = 'general' | 'accounts' | 'labels' | 'imap_smtp' | 'filters' | 'security' | 'notifications'
+type Section = 'general' | 'accounts' | 'labels'
 
-const FOLDER_TYPE_KEYS: Record<string, string> = {
-  inbox: 'sidebar.folder.inbox',
-  sent: 'sidebar.folder.sent',
-  drafts: 'sidebar.folder.drafts',
-  archive: 'sidebar.folder.archive',
-  spam: 'sidebar.folder.spam',
-  trash: 'sidebar.folder.trash'
-}
+const SECTIONS: { id: Section; key: string; icon: string }[] = [
+  { id: 'general', key: 'settings.tab.general', icon: 'tune' },
+  { id: 'accounts', key: 'settings.tab.accounts', icon: 'alternate_email' },
+  { id: 'labels', key: 'sidebar.labels', icon: 'label' }
+]
 
-function formatBytesShort(bytes: number): string {
+const folderName = (f: FolderSummary, t: (k: string) => string): string =>
+  ['inbox', 'sent', 'drafts', 'archive', 'spam', 'trash'].includes(f.type) ? t(`sidebar.folder.${f.type}`) : f.displayName
+
+function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function formatRelativeSync(iso: string | null, t: (key: string, vars?: Record<string, string | number>) => string, locale: string): string {
-  if (!iso) return t('settings.accounts.never_synced')
-  const diffMs = Date.now() - new Date(iso).getTime()
-  const minutes = Math.floor(diffMs / 60_000)
-  if (minutes < 1) return t('settings.accounts.just_now')
-  if (minutes < 60) return t('settings.accounts.min_ago', { min: minutes })
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return t('settings.accounts.hours_ago', { hours })
-  return new Date(iso).toLocaleString(locale)
+/** A titled block of settings; the page reads top to bottom like a document. */
+function Block({ title, description, action, children }: { title: string; description?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }): JSX.Element {
+  return (
+    <section className="py-7 border-b border-line last:border-b-0">
+      <div className="flex items-start gap-4 mb-4">
+        <div className="flex-1 min-w-0">
+          <h2 className="text-md font-semibold text-ink">{title}</h2>
+          {description && <p className="mt-1 text-sm text-ink-2 leading-relaxed">{description}</p>}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
 }
 
-const TABS: { id: SettingsTab; labelKey: string; defaultLabel: string; icon: string }[] = [
-  { id: 'general', labelKey: 'settings.tab.general', defaultLabel: 'Ogólne i język', icon: 'settings' },
-  { id: 'accounts', labelKey: 'settings.tab.accounts', defaultLabel: 'Konta pocztowe', icon: 'manage_accounts' },
-  { id: 'labels', labelKey: 'sidebar.labels', defaultLabel: 'Etykiety', icon: 'label' },
-  { id: 'imap_smtp', labelKey: 'settings.tab.imap_smtp', defaultLabel: 'Serwery IMAP / SMTP', icon: 'dns' },
-  { id: 'filters', labelKey: 'settings.tab.filters', defaultLabel: 'Filtry i reguły', icon: 'alt_route' },
-  { id: 'security', labelKey: 'settings.tab.security', defaultLabel: 'Bezpieczeństwo', icon: 'lock' },
-  { id: 'notifications', labelKey: 'settings.tab.notifications', defaultLabel: 'Powiadomienia', icon: 'notifications_active' }
-]
+function Notice({ ok, children }: { ok: boolean; children: React.ReactNode }): JSX.Element {
+  return (
+    <p role={ok ? 'status' : 'alert'} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-ok' : 'text-danger'}`}>
+      <Icon name={ok ? 'check_circle' : 'error'} className="!text-[15px]" />
+      {children}
+    </p>
+  )
+}
 
 export function SettingsView({ onBackToMail, onOpenAddAccount }: SettingsViewProps): JSX.Element {
-  const { accounts, select, selectedAccountId, remove, setDefault } = useAccountsStore()
-  const { syncing, syncNow, lastSyncedAt } = useMailStore()
+  const { t } = useTranslation()
+  const [section, setSection] = useState<Section>('general')
+  const { accounts } = useAccountsStore()
   const labels = useLabelsStore((s) => s.labels)
-  const { t, locale } = useTranslation()
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general')
-  const [testSteps, setTestSteps] = useState<TestConnectionStep[] | null>(null)
-  const [testingId, setTestingId] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [deleteConfirmAccount, setDeleteConfirmAccount] = useState<AccountSummary | null>(null)
+  const counts: Partial<Record<Section, number>> = { accounts: accounts.length, labels: labels.length }
 
-  const activeAccount = accounts.find((a) => a.id === selectedAccountId) || accounts[0]
+  return (
+    <div className="flex-1 min-w-0 flex max-md:flex-col">
+      <nav className="w-56 max-md:w-full flex-shrink-0 border-r max-md:border-r-0 max-md:border-b border-line px-3 py-4 flex md:flex-col gap-px max-md:overflow-x-auto" aria-label={t('settings.title')}>
+        <button type="button" onClick={onBackToMail} className="hidden md:flex items-center gap-1.5 h-7 px-2 mb-3 rounded text-xs text-ink-3 hover:text-ink hover:bg-hover">
+          <Icon name="arrow_back" className="!text-[16px]" />
+          {t('settings.back_to_mail_short')}
+        </button>
+        <h1 className="hidden md:block font-serif text-2xl text-ink px-2 mb-4">{t('settings.title')}</h1>
+        {SECTIONS.map((s) => (
+          <button
+            key={s.id}
+            type="button"
+            aria-current={section === s.id ? 'page' : undefined}
+            onClick={() => setSection(s.id)}
+            className={`h-8 flex items-center gap-2.5 px-2.5 rounded text-sm whitespace-nowrap ${section === s.id ? 'bg-raised shadow-1 text-ink font-medium' : 'text-ink-2 hover:bg-hover hover:text-ink'}`}
+          >
+            <Icon name={s.icon} className={section === s.id ? 'text-accent' : 'text-ink-3'} />
+            <span className="flex-1 text-left">{t(s.key)}</span>
+            {counts[s.id] !== undefined && <span className="text-xs text-ink-3 tabular-nums">{counts[s.id]}</span>}
+          </button>
+        ))}
+      </nav>
 
-  const handleTestConnection = async (accId: string): Promise<void> => {
-    setTestingId(accId)
-    setTestSteps(null)
-    try {
-      const acc = accounts.find((a) => a.id === accId)
-      if (!acc) return
-      const [imapSteps, smtpSteps] = await Promise.all([
-        window.mailapp.accounts.testConnection({
-          host: acc.imapHost,
-          port: acc.imapPort,
-          security: acc.imapSecurity,
-          protocol: 'imap',
-          email: acc.email,
-          password: '***'
-        }),
-        window.mailapp.accounts.testConnection({
-          host: acc.smtpHost,
-          port: acc.smtpPort,
-          security: acc.smtpSecurity,
-          protocol: 'smtp',
-          email: acc.email,
-          password: '***'
-        })
-      ])
-      setTestSteps([...imapSteps, ...smtpSteps])
-    } catch (e) {
-      setTestSteps([{ step: 'auth', ok: false, message: (e as Error).message }])
-    } finally {
-      setTestingId(null)
-    }
+      <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="max-w-[720px] px-8 max-sm:px-4 pb-16">
+          {section === 'general' && <GeneralSection />}
+          {section === 'accounts' && <AccountsSection onOpenAddAccount={onOpenAddAccount} />}
+          {section === 'labels' && <LabelsSection />}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ General */
+
+function GeneralSection(): JSX.Element {
+  const { language, setLanguage, t } = useTranslation()
+  const { theme, setTheme } = useTheme()
+  const [notify, setNotify] = useState(true)
+  const [notifyLoaded, setNotifyLoaded] = useState(false)
+  const [prefs, setPrefs] = useState({ openAtLogin: false, startMinimized: false })
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+
+  useEffect(() => {
+    window.mailapp.settings.get('notifyNewMail').then((v) => {
+      setNotify(v !== 'false')
+      setNotifyLoaded(true)
+    })
+    window.mailapp.system.getLoginItemPrefs().then((p) => {
+      setPrefs(p)
+      setPrefsLoaded(true)
+    })
+  }, [])
+
+  const updatePrefs = async (patch: Partial<typeof prefs>): Promise<void> => {
+    const next = { ...prefs, ...patch }
+    setPrefs(next)
+    await window.mailapp.system.setLoginItemPrefs(next)
   }
 
-  const handleForceSync = (): void => {
-    if (syncing) return
-    if (selectedAccountId) syncNow(selectedAccountId)
-    else if (accounts.length > 0) syncNow(accounts[0].id)
-  }
+  const themes: [ThemeMode, string, string][] = [
+    ['light', 'light_mode', t('onboarding.appearance.theme.light')],
+    ['dark', 'dark_mode', t('onboarding.appearance.theme.dark')],
+    ['system', 'computer', t('onboarding.appearance.theme.system')]
+  ]
+  const languages: [Language, string, string][] = [
+    ['pl', 'Polski', t('settings.default_app_language')],
+    ['en', 'English', t('settings.english_ui_desc')]
+  ]
 
-  const handleDeleteAccount = async (): Promise<void> => {
-    if (!deleteConfirmAccount) return
-    setDeletingId(deleteConfirmAccount.id)
-    try {
-      await remove(deleteConfirmAccount.id)
-    } finally {
-      setDeletingId(null)
-    }
+  return (
+    <>
+      <Block title={t('onboarding.appearance.theme')} description={t('onboarding.appearance.subtitle')}>
+        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('onboarding.appearance.theme')}>
+          {themes.map(([mode, icon, label]) => (
+            <label key={mode} className="cursor-pointer">
+              <input type="radio" name="theme" className="peer sr-only" checked={theme === mode} onChange={() => setTheme(mode)} />
+              <span className="flex items-center gap-2 h-10 px-3 rounded border border-line-strong bg-raised text-sm text-ink-2 peer-checked:border-accent peer-checked:text-ink peer-checked:shadow-[0_0_0_1px_var(--accent)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+                <Icon name={icon} />
+                {label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </Block>
+
+      <Block title={t('settings.language.title')} description={t('settings.language.desc')}>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('settings.language.title')}>
+          {languages.map(([code, name, desc]) => (
+            <label key={code} className="cursor-pointer">
+              <input type="radio" name="language" className="peer sr-only" checked={language === code} onChange={() => setLanguage(code)} />
+              <span className="block px-3 py-2.5 rounded border border-line-strong bg-raised peer-checked:border-accent peer-checked:shadow-[0_0_0_1px_var(--accent)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+                <span className="block text-sm font-medium text-ink">{name}</span>
+                <span className="block text-xs text-ink-3">{desc}</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </Block>
+
+      <Block title={t('settings.desktop_notifications_title')} description={t('settings.notifications_always_desc')}>
+        <SwitchRow
+          checked={notify}
+          disabled={!notifyLoaded}
+          onChange={(v) => {
+            setNotify(v)
+            window.mailapp.settings.set('notifyNewMail', v ? 'true' : 'false')
+          }}
+          label={t('settings.new_mail_label')}
+          description={t('settings.new_mail_toggle_desc')}
+        />
+      </Block>
+
+      <Block title={t('settings.startup.title')} description={t('settings.startup.desc')}>
+        <div className="divide-y divide-line">
+          <SwitchRow checked={prefs.openAtLogin} disabled={!prefsLoaded} onChange={(v) => updatePrefs({ openAtLogin: v })} label={t('settings.startup.launch_at_login_label')} description={t('settings.startup.launch_at_login_desc')} />
+          <SwitchRow
+            checked={prefs.startMinimized}
+            disabled={!prefsLoaded || !prefs.openAtLogin}
+            onChange={(v) => updatePrefs({ startMinimized: v })}
+            label={t('settings.startup.start_minimized_label')}
+            description={t('settings.startup.start_minimized_desc')}
+          />
+        </div>
+      </Block>
+    </>
+  )
+}
+
+/* ----------------------------------------------------------------- Accounts */
+
+function AccountsSection({ onOpenAddAccount }: { onOpenAddAccount: () => void }): JSX.Element {
+  const { t, formatDate } = useTranslation()
+  const { accounts, selectedAccountId, remove, setDefault } = useAccountsStore()
+  const { syncing, syncNow, lastSyncedAt } = useMailStore()
+  const [detailId, setDetailId] = useState<string | null>(null)
+  const [toDelete, setToDelete] = useState<AccountSummary | null>(null)
+
+  const detail = accounts.find((a) => a.id === (detailId ?? selectedAccountId)) ?? accounts[0]
+
+  if (accounts.length === 0) {
+    return (
+      <Block title={t('settings.tab.accounts')} description={t('settings.no_accounts_yet')}>
+        <Button variant="primary" icon="add" onClick={onOpenAddAccount}>
+          {t('addAccount.save_account')}
+        </Button>
+      </Block>
+    )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-background dark:bg-[#0b0f19] text-on-surface dark:text-slate-100 select-none">
-      <div className="px-space-xl py-space-lg max-w-[1200px] w-full mx-auto space-y-space-xl">
-        {/* Top Settings Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
-          <div className="space-y-1">
-            <div className="flex items-center gap-space-xs text-on-surface-variant dark:text-text-muted font-caption text-caption">
-              <button
-                type="button"
-                onClick={onBackToMail}
-                className="hover:text-primary dark:hover:text-indigo-400 cursor-pointer transition-colors flex items-center gap-0.5"
-              >
-                <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-                <span>{t('settings.back_to_mail_short')}</span>
-              </button>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-on-surface dark:text-white font-medium">{t('settings.title', undefined, 'Ustawienia')}</span>
-            </div>
-            <h1 className="font-headline-xl text-headline-xl text-on-surface dark:text-white tracking-tight">{t('settings.title', undefined, 'Ustawienia')}</h1>
-            <div className="flex items-center gap-space-md pt-1 flex-wrap">
-              <span className="font-caption text-caption text-on-surface-variant dark:text-text-muted flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-primary dark:text-indigo-400">sync</span>
-                {t('settings.last_sync_label')}{' '}
-                <strong className="font-semibold text-on-surface dark:text-white">{formatRelativeSync(lastSyncedAt, t, locale)}</strong>
-              </span>
-            </div>
-          </div>
+    <>
+      <Block
+        title={t('settings.tab.accounts')}
+        description={lastSyncedAt ? `${t('settings.last_sync_label')} ${formatDate(lastSyncedAt, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : t('settings.accounts.never_synced')}
+        action={
+          <Button size="sm" icon="add" onClick={onOpenAddAccount}>
+            {t('addAccount.save_account')}
+          </Button>
+        }
+      >
+        <ul className="border border-line rounded divide-y divide-line bg-raised" role="radiogroup" aria-label={t('settings.tab.accounts')}>
+          {accounts.map((acc) => {
+            const ok = acc.status === 'active'
+            const selected = detail?.id === acc.id
+            return (
+              <li key={acc.id} className={`flex items-center gap-3 pl-3 pr-2 py-2.5 ${selected ? 'bg-selected' : ''}`}>
+                <button type="button" role="radio" aria-checked={selected} onClick={() => setDetailId(acc.id)} className="flex-1 min-w-0 flex items-center gap-3 text-left">
+                  <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: acc.color }} />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-ink truncate">{acc.displayName || acc.email}</span>
+                      {acc.isDefault && <span className="chip">{t('settingsModal.default_badge')}</span>}
+                    </span>
+                    <span className="block text-xs text-ink-3 truncate">
+                      {acc.email} · <span className={ok ? 'text-ok' : 'text-warn'}>{ok ? t('settings.status_active') : t('settingsModal.status_warning')}</span>
+                    </span>
+                    {acc.lastError && <span className="block text-xs text-warn truncate">{acc.lastError}</span>}
+                  </span>
+                </button>
+                <IconButton size="sm" icon="sync" label={t('settings.sync_now_btn')} loading={syncing} onClick={() => syncNow(acc.id)} />
+              </li>
+            )
+          })}
+        </ul>
+      </Block>
 
-          <div className="flex items-center gap-space-sm">
-            <Button variant="secondary" size="sm" onClick={handleForceSync} loading={syncing} icon={<span className="material-symbols-outlined text-[18px]">sync_saved_locally</span>}>
-              {syncing ? t('settings.syncing_label') : t('settings.force_sync_label')}
-            </Button>
-            <Button variant="primary" size="sm" onClick={onOpenAddAccount} icon={<span className="material-symbols-outlined text-[18px]">add</span>}>
-              {t('addAccount.save_account')}
-            </Button>
-          </div>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="bg-surface-container-low dark:bg-[#161f30] p-1 rounded-xl flex items-center gap-1 overflow-x-auto border border-border-subtle dark:border-white/[0.06]">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-space-xs px-space-md py-2 rounded-lg font-title-sm text-title-sm transition-all whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'bg-surface-container-lowest dark:bg-[#121826] text-primary dark:text-indigo-400 font-semibold shadow-sm'
-                  : 'text-on-surface-variant dark:text-text-muted hover:text-on-surface dark:hover:text-white'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
-              <span>{t(tab.labelKey, undefined, tab.defaultLabel)}</span>
-              {tab.id === 'accounts' && (
-                <span className="ml-1 font-label-mono text-caption bg-primary-fixed dark:bg-indigo-950 text-on-primary-fixed-variant dark:text-indigo-300 px-1.5 py-0.2 rounded-full font-bold">
-                  {accounts.length}
-                </span>
-              )}
-              {tab.id === 'labels' && (
-                <span className="ml-1 font-label-mono text-caption bg-primary-fixed dark:bg-indigo-950 text-on-primary-fixed-variant dark:text-indigo-300 px-1.5 py-0.2 rounded-full font-bold">
-                  {labels.length}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === 'general' && <GeneralTab />}
-
-        {activeTab === 'labels' && <LabelsTab />}
-
-        {activeTab === 'notifications' && <NotificationsTab />}
-
-        {activeTab === 'accounts' && (
-          accounts.length === 0 ? (
-            <div className="p-space-xl text-center rounded-xl border border-dashed border-border-subtle dark:border-white/[0.1] text-on-surface-variant dark:text-text-muted">
-              {t('settings.no_accounts_yet')}{' '}
-              <button type="button" onClick={onOpenAddAccount} className="text-primary dark:text-indigo-400 font-semibold hover:underline">
-                {t('settingsModal.add_first_account')}
-              </button>
-              .
-            </div>
-          ) : (
-            <AccountsTab
-              accounts={accounts}
-              selectedAccountId={selectedAccountId}
-              onSelect={select}
-              onSetDefault={setDefault}
-              onDelete={setDeleteConfirmAccount}
-              deletingId={deletingId}
-              onTest={handleTestConnection}
-              testingId={testingId}
-              onSync={syncNow}
-            />
-          )
-        )}
-
-        {activeTab === 'imap_smtp' && (
-          activeAccount ? (
-            <ImapSmtpTab
-              account={activeAccount}
-              onTest={() => handleTestConnection(activeAccount.id)}
-              testing={testingId === activeAccount.id}
-              testSteps={testSteps}
-            />
-          ) : (
-            <div className="p-6 text-center text-slate-500">{t('settings.select_or_add_account')}</div>
-          )
-        )}
-
-        {activeTab === 'filters' && (
-          activeAccount ? (
-            <FiltersTab account={activeAccount} />
-          ) : (
-            <div className="p-6 text-center text-slate-500">{t('settings.select_or_add_account')}</div>
-          )
-        )}
-
-        {activeTab === 'security' && (
-          activeAccount ? (
-            <SecurityTab account={activeAccount} />
-          ) : (
-            <div className="p-6 text-center text-slate-500">{t('settings.select_or_add_account')}</div>
-          )
-        )}
-      </div>
+      {detail && (
+        <>
+          <Block
+            title={detail.displayName || detail.email}
+            description={detail.email}
+            action={
+              <div className="flex gap-1">
+                {!detail.isDefault && (
+                  <Button size="sm" variant="ghost" onClick={() => setDefault(detail.id)}>
+                    {t('settings.make_default')}
+                  </Button>
+                )}
+                <Button size="sm" variant="danger-ghost" icon="delete" onClick={() => setToDelete(detail)}>
+                  {t('settingsModal.delete_account')}
+                </Button>
+              </div>
+            }
+          >
+            <ServerForm account={detail} />
+          </Block>
+          <PasswordForm account={detail} />
+          <RulesBlock account={detail} />
+          <BandwidthBlock account={detail} />
+        </>
+      )}
 
       <ConfirmDialog
-        open={deleteConfirmAccount !== null}
-        onClose={() => setDeleteConfirmAccount(null)}
-        onConfirm={handleDeleteAccount}
-        title={deleteConfirmAccount ? t('settings.accounts.delete_confirm_title', { email: deleteConfirmAccount.email }) : t('settings.delete_account_confirm_title')}
-        description={
-          deleteConfirmAccount
-            ? t('settings.accounts.delete_confirm_desc')
-            : undefined
-        }
+        open={toDelete !== null}
+        onClose={() => setToDelete(null)}
+        onConfirm={async () => {
+          if (!toDelete) return
+          await remove(toDelete.id)
+          setDetailId(null)
+        }}
+        title={toDelete ? t('settings.accounts.delete_confirm_title', { email: toDelete.email }) : t('settings.delete_account_confirm_title')}
+        description={t('settings.accounts.delete_confirm_desc')}
         confirmLabel={t('settingsModal.delete_account')}
         danger
       />
-    </div>
+    </>
   )
 }
 
-/* ---------------------------------------------------------------------- */
-/* Tab: Konta pocztowe                                                     */
-/* ---------------------------------------------------------------------- */
-
-function AccountsTab({
-  accounts,
-  selectedAccountId,
-  onSelect,
-  onSetDefault,
-  onDelete,
-  deletingId,
-  onTest,
-  testingId,
-  onSync
-}: {
-  accounts: AccountSummary[]
-  selectedAccountId: string | null
-  onSelect: (id: string) => void
-  onSetDefault: (id: string) => void
-  onDelete: (acc: AccountSummary) => void
-  deletingId: string | null
-  onTest: (id: string) => void
-  testingId: string | null
-  onSync: (id: string) => void
-}): JSX.Element {
-  const { t } = useTranslation()
-  return (
-    <div className="space-y-space-md">
-      {accounts.map((acc, index) => {
-        const isSelected = acc.id === selectedAccountId || (selectedAccountId === null && index === 0)
-        const isOk = acc.status === 'active'
-
-        return (
-          <div
-            key={acc.id}
-            className={`bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm hover:shadow-md transition-all relative overflow-hidden border border-border-subtle dark:border-white/[0.06] ${
-              isSelected ? 'ring-2 ring-primary/40' : ''
-            }`}
-          >
-            <div className={`absolute top-0 left-0 bottom-0 w-1.5 ${isOk ? 'bg-primary dark:bg-indigo-500' : 'bg-amber-500'}`} />
-            <div className="flex flex-col gap-space-md">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
-                <div className="flex items-center gap-space-md min-w-0">
-                  <div
-                    className="relative w-12 h-12 rounded-xl flex items-center justify-center font-headline-md font-bold shadow-inner text-white flex-shrink-0"
-                    style={{ backgroundColor: acc.color || '#4f46e5' }}
-                  >
-                    {(acc.displayName || acc.email).slice(0, 2).toUpperCase()}
-                    <span className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center text-white ${isOk ? 'bg-emerald-500' : 'bg-amber-500'}`}>
-                      <span className="material-symbols-outlined text-[12px] font-bold">{isOk ? 'check' : 'priority_high'}</span>
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-space-xs flex-wrap">
-                      <h2 className="font-title-sm text-title-sm text-on-surface dark:text-white font-bold truncate">
-                        {acc.displayName || acc.email}
-                      </h2>
-                      {acc.isDefault && (
-                        <span className="font-caption text-caption bg-primary-fixed dark:bg-indigo-950 text-on-primary-fixed-variant dark:text-indigo-300 px-2 py-0.5 rounded font-semibold uppercase tracking-wider text-[10px]">
-                          {t('settingsModal.default_badge')}
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-label-mono text-caption text-on-surface-variant dark:text-text-muted truncate block">{acc.email}</span>
-                    {acc.lastError && (
-                      <span className="font-caption text-[11px] text-amber-700 dark:text-amber-400">{acc.lastError}</span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span
-                    className={`inline-flex items-center gap-1.5 px-space-sm py-1 rounded-full font-label-mono text-caption font-medium ${
-                      isOk ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
-                    }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isOk ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-                    {isOk ? t('settings.status_active') : t('settingsModal.status_warning')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onSelect(acc.id)}
-                    className="p-1.5 rounded-lg hover:bg-surface-container dark:hover:bg-slate-800 text-on-surface-variant dark:text-text-muted hover:text-on-surface transition-colors"
-                    title={t('settings.switch_to_inbox_tooltip')}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">{isSelected ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-space-sm bg-surface-container-low/60 dark:bg-[#161f30]/60 p-space-md rounded-lg border border-border-subtle dark:border-white/[0.04]">
-                <div className="flex items-start gap-space-sm min-w-0">
-                  <span className="material-symbols-outlined text-primary dark:text-indigo-400 text-[18px] mt-0.5 flex-shrink-0">downloading</span>
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="font-caption text-caption uppercase tracking-wider text-on-surface-variant dark:text-text-muted font-semibold">{t('settings.imap_label')}</span>
-                    <p className="font-label-mono text-caption text-on-surface dark:text-white font-medium truncate">
-                      {acc.imapHost}:{acc.imapPort} ({acc.imapSecurity.toUpperCase()})
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-space-sm min-w-0">
-                  <span className="material-symbols-outlined text-secondary text-[18px] mt-0.5 flex-shrink-0">send</span>
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="font-caption text-caption uppercase tracking-wider text-on-surface-variant dark:text-text-muted font-semibold">{t('settings.smtp_label')}</span>
-                    <p className="font-label-mono text-caption text-on-surface dark:text-white font-medium truncate">
-                      {acc.smtpHost}:{acc.smtpPort} ({acc.smtpSecurity.toUpperCase()})
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between pt-space-xs gap-space-sm">
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" checked={acc.isDefault} disabled={acc.isDefault} onChange={() => onSetDefault(acc.id)} className="sr-only peer" />
-                  <div className="w-8 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
-                  <span className="ml-2 font-caption text-caption font-medium text-on-surface dark:text-slate-300">{t('settings.default_sender_label')}</span>
-                </label>
-
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => onTest(acc.id)}
-                    disabled={testingId === acc.id}
-                    className="px-space-sm py-1 rounded-lg bg-surface-container-low dark:bg-slate-800 hover:bg-surface-container text-on-surface dark:text-slate-200 font-caption text-caption font-medium transition-colors flex items-center gap-1 border border-border-subtle dark:border-white/[0.04]"
-                  >
-                    <span className={`material-symbols-outlined text-[15px] ${testingId === acc.id ? 'animate-spin text-primary' : 'text-emerald-600'}`}>network_check</span>
-                    <span>{testingId === acc.id ? t('settings.testing_ellipsis') : t('settingsModal.test_connection_btn')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onSync(acc.id)}
-                    className="px-space-sm py-1 rounded-lg bg-surface-container-low dark:bg-slate-800 hover:bg-surface-container text-on-surface dark:text-slate-200 font-caption text-caption font-medium transition-colors flex items-center gap-1 border border-border-subtle dark:border-white/[0.04]"
-                  >
-                    <span className="material-symbols-outlined text-[15px] text-primary dark:text-indigo-400">sync</span>
-                    <span>{t('settings.sync_now_btn')}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onDelete(acc)}
-                    disabled={deletingId === acc.id}
-                    className="px-space-sm py-1 rounded-lg bg-surface-container-low dark:bg-slate-800 hover:bg-error-container hover:text-on-error-container text-on-surface-variant dark:text-text-muted font-caption text-caption font-medium transition-colors flex items-center gap-1 border border-border-subtle dark:border-white/[0.04]"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">{deletingId === acc.id ? 'delete_forever' : 'delete'}</span>
-                    <span>{deletingId === acc.id ? t('settings.deleting_ellipsis') : t('settingsModal.delete_account')}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ---------------------------------------------------------------------- */
-/* Tab: Serwery IMAP / SMTP                                                */
-/* ---------------------------------------------------------------------- */
-
-interface ImapSmtpFormState {
+interface ServerFormState {
   imapHost: string
   imapPort: string
   imapSecurity: AccountSecurity
@@ -434,285 +304,238 @@ interface ImapSmtpFormState {
   smtpSecurity: AccountSecurity
 }
 
-function toFormState(acc: AccountSummary): ImapSmtpFormState {
-  return {
-    imapHost: acc.imapHost,
-    imapPort: String(acc.imapPort),
-    imapSecurity: acc.imapSecurity,
-    smtpHost: acc.smtpHost,
-    smtpPort: String(acc.smtpPort),
-    smtpSecurity: acc.smtpSecurity
-  }
-}
+const toForm = (a: AccountSummary): ServerFormState => ({
+  imapHost: a.imapHost,
+  imapPort: String(a.imapPort),
+  imapSecurity: a.imapSecurity,
+  smtpHost: a.smtpHost,
+  smtpPort: String(a.smtpPort),
+  smtpSecurity: a.smtpSecurity
+})
 
-function ImapSmtpTab({
-  account,
-  onTest,
-  testing,
-  testSteps
-}: {
-  account: AccountSummary
-  onTest: () => void
-  testing: boolean
-  testSteps: TestConnectionStep[] | null
-}): JSX.Element {
+function ServerForm({ account }: { account: AccountSummary }): JSX.Element {
   const { t } = useTranslation()
-  const STEP_LABELS: Record<TestConnectionStep['step'], string> = {
-    dns: 'DNS',
-    tcp: 'TCP',
-    tls: 'TLS',
-    auth: t('settings.step_auth_label')
-  }
-  const [form, setForm] = useState<ImapSmtpFormState>(() => toFormState(account))
+  const [form, setForm] = useState(() => toForm(account))
   const [saving, setSaving] = useState(false)
-  const [saveMessage, setSaveMessage] = useState<{ ok: boolean; text: string } | null>(null)
-  const [bandwidthPoints, setBandwidthPoints] = useState<BandwidthPoint[]>([])
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [testing, setTesting] = useState(false)
+  const [steps, setSteps] = useState<{ label: string; steps: TestConnectionStep[] }[] | null>(null)
 
   useEffect(() => {
-    setForm(toFormState(account))
-    setSaveMessage(null)
+    setForm(toForm(account))
+    setMessage(null)
+    setSteps(null)
   }, [account.id])
 
-  useEffect(() => {
-    let cancelled = false
-    window.mailapp.bandwidth.recent(account.id).then((points) => {
-      if (!cancelled) setBandwidthPoints(points)
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [account.id])
-
-  const isDirty = useMemo(() => {
-    const original = toFormState(account)
-    return JSON.stringify(original) !== JSON.stringify(form)
-  }, [account, form])
-
-  const imapPortNum = Number(form.imapPort)
-  const smtpPortNum = Number(form.smtpPort)
+  const dirty = useMemo(() => JSON.stringify(toForm(account)) !== JSON.stringify(form), [account, form])
+  const port = (v: string): boolean => Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 65535
   const errors = {
     imapHost: form.imapHost.trim() ? null : t('settings.field_required'),
-    imapPort: Number.isInteger(imapPortNum) && imapPortNum >= 1 && imapPortNum <= 65535 ? null : t('settings.field_port_range'),
+    imapPort: port(form.imapPort) ? null : t('settings.field_port_range'),
     smtpHost: form.smtpHost.trim() ? null : t('settings.field_required'),
-    smtpPort: Number.isInteger(smtpPortNum) && smtpPortNum >= 1 && smtpPortNum <= 65535 ? null : t('settings.field_port_range')
+    smtpPort: port(form.smtpPort) ? null : t('settings.field_port_range')
   }
   const hasErrors = Object.values(errors).some(Boolean)
 
-  const sparkline = useMemo(() => {
-    if (bandwidthPoints.length < 2) return null
-    const maxKbps = Math.max(...bandwidthPoints.map((p) => p.kbps), 1)
-    const stepX = 200 / (bandwidthPoints.length - 1)
-    const coords = bandwidthPoints.map((p, i) => `${(i * stepX).toFixed(1)},${(38 - (p.kbps / maxKbps) * 34).toFixed(1)}`)
-    return { line: `M${coords.join(' L')}`, fill: `M${coords.join(' L')} L200,40 L0,40 Z` }
-  }, [bandwidthPoints])
-  const currentKbps = bandwidthPoints.length > 0 ? bandwidthPoints[bandwidthPoints.length - 1].kbps : null
-  const totalBandwidthBytes = bandwidthPoints.reduce((sum, p) => sum + p.bytesTransferred, 0)
-
-  async function handleSave(): Promise<void> {
+  const save = async (): Promise<void> => {
     if (hasErrors) return
     setSaving(true)
-    setSaveMessage(null)
+    setMessage(null)
     try {
       await window.mailapp.accounts.update(account.id, {
         imapHost: form.imapHost.trim(),
-        imapPort: imapPortNum,
+        imapPort: Number(form.imapPort),
         imapSecurity: form.imapSecurity,
         smtpHost: form.smtpHost.trim(),
-        smtpPort: smtpPortNum,
+        smtpPort: Number(form.smtpPort),
         smtpSecurity: form.smtpSecurity
       })
       useAccountsStore.getState().load()
-      setSaveMessage({ ok: true, text: t('settings.saved_server_changes') })
+      setMessage({ ok: true, text: t('settings.saved_server_changes') })
     } catch (err) {
-      setSaveMessage({ ok: false, text: (err as Error).message })
+      setMessage({ ok: false, text: (err as Error).message })
     } finally {
       setSaving(false)
     }
   }
 
-  function handleDiscard(): void {
-    setForm(toFormState(account))
-    setSaveMessage(null)
+  // The stored password never leaves the main process, so the renderer can only check
+  // reachability (DNS/TCP/TLS) of the entered hosts; the login step is skipped here.
+  const test = async (): Promise<void> => {
+    setTesting(true)
+    setSteps(null)
+    try {
+      const run = (protocol: 'imap' | 'smtp'): Promise<TestConnectionStep[]> =>
+        window.mailapp.accounts
+          .testConnection({
+            host: (protocol === 'imap' ? form.imapHost : form.smtpHost).trim(),
+            port: Number(protocol === 'imap' ? form.imapPort : form.smtpPort),
+            security: protocol === 'imap' ? form.imapSecurity : form.smtpSecurity,
+            protocol,
+            email: account.email,
+            password: ''
+          })
+          .then((s) => s.filter((x) => x.step !== 'auth'))
+      const [imap, smtp] = await Promise.all([run('imap'), run('smtp')])
+      setSteps([
+        { label: 'IMAP', steps: imap },
+        { label: 'SMTP', steps: smtp }
+      ])
+    } catch (err) {
+      setSteps([{ label: '', steps: [{ step: 'tcp', ok: false, message: (err as Error).message }] }])
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  const column = (kind: 'imap' | 'smtp'): JSX.Element => {
+    const host = kind === 'imap' ? 'imapHost' : 'smtpHost'
+    const p = kind === 'imap' ? 'imapPort' : 'smtpPort'
+    const sec = kind === 'imap' ? 'imapSecurity' : 'smtpSecurity'
+    return (
+      <fieldset className="flex flex-col gap-3">
+        <legend className="eyebrow mb-2">{kind === 'imap' ? t('settings.imap_incoming_label') : t('settings.smtp_outgoing_label')}</legend>
+        <Field label={t('settings.host_label')} error={errors[host]}>
+          {({ id, describedBy, invalid }) => <input id={id} className="input" spellCheck={false} value={form[host]} onChange={(e) => setForm((f) => ({ ...f, [host]: e.target.value }))} aria-describedby={describedBy} aria-invalid={invalid} />}
+        </Field>
+        <div className="grid grid-cols-[96px_1fr] gap-2">
+          <Field label={t('addAccount.port')} error={errors[p]}>
+            {({ id, describedBy, invalid }) => <input id={id} inputMode="numeric" className="input" value={form[p]} onChange={(e) => setForm((f) => ({ ...f, [p]: e.target.value }))} aria-describedby={describedBy} aria-invalid={invalid} />}
+          </Field>
+          <Field label={t('settings.encryption_label')}>
+            {({ id }) => (
+              <select id={id} className="select" value={form[sec]} onChange={(e) => setForm((f) => ({ ...f, [sec]: e.target.value as AccountSecurity }))}>
+                <option value="ssl">SSL / TLS</option>
+                <option value="starttls">{t('settings.security_starttls')}</option>
+                <option value="none">{t('settings.security_none')}</option>
+              </select>
+            )}
+          </Field>
+        </div>
+      </fieldset>
+    )
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
-      <div className="lg:col-span-8 space-y-space-lg">
-        <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm space-y-space-md border border-border-subtle dark:border-white/[0.06]">
-          <div className="flex items-center gap-space-xs">
-            <span className="material-symbols-outlined text-primary dark:text-indigo-400 text-[20px]">tune</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white font-bold">{account.displayName || account.email}</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md pt-space-xs">
-            <div className="space-y-space-sm bg-surface-container-low/40 dark:bg-[#161f30]/40 p-space-md rounded-xl border border-border-subtle dark:border-white/[0.04]">
-              <span className="font-title-sm text-caption uppercase tracking-wider text-primary dark:text-indigo-400 font-bold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">inbox</span>
-                {t('settings.imap_incoming_label')}
-              </span>
-              <FormField label="Host" value={form.imapHost} error={errors.imapHost} onChange={(v) => setForm((f) => ({ ...f, imapHost: v }))} />
-              <div className="grid grid-cols-2 gap-space-sm">
-                <FormField label="Port" value={form.imapPort} error={errors.imapPort} onChange={(v) => setForm((f) => ({ ...f, imapPort: v }))} />
-                <SecurityField value={form.imapSecurity} onChange={(v) => setForm((f) => ({ ...f, imapSecurity: v }))} />
-              </div>
-            </div>
-
-            <div className="space-y-space-sm bg-surface-container-low/40 dark:bg-[#161f30]/40 p-space-md rounded-xl border border-border-subtle dark:border-white/[0.04]">
-              <span className="font-title-sm text-caption uppercase tracking-wider text-secondary font-bold flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px]">send</span>
-                {t('settings.smtp_outgoing_label')}
-              </span>
-              <FormField label="Host" value={form.smtpHost} error={errors.smtpHost} onChange={(v) => setForm((f) => ({ ...f, smtpHost: v }))} />
-              <div className="grid grid-cols-2 gap-space-sm">
-                <FormField label="Port" value={form.smtpPort} error={errors.smtpPort} onChange={(v) => setForm((f) => ({ ...f, smtpPort: v }))} />
-                <SecurityField value={form.smtpSecurity} onChange={(v) => setForm((f) => ({ ...f, smtpSecurity: v }))} />
-              </div>
-            </div>
-          </div>
-
-          {saveMessage && (
-            <div
-              className={`p-space-sm rounded-lg text-caption flex items-center gap-2 ${
-                saveMessage.ok
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                  : 'bg-error-container dark:bg-rose-950/40 text-on-error-container dark:text-rose-300'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">{saveMessage.ok ? 'check_circle' : 'error'}</span>
-              {saveMessage.text}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between pt-space-xs flex-wrap gap-space-sm">
-            <Button variant="secondary" size="sm" onClick={onTest} loading={testing} icon={<span className="material-symbols-outlined text-[16px]">speed</span>}>
-              {t('addAccount.test_connection')}
-            </Button>
-            <div className="flex items-center gap-2">
-              {isDirty && (
-                <Button variant="ghost" size="sm" onClick={handleDiscard}>
-                  {t('settings.discard_changes_btn')}
-                </Button>
-              )}
-              <Button variant="primary" size="sm" onClick={handleSave} loading={saving} disabled={!isDirty || hasErrors}>
-                {t('settings.save_changes_btn')}
-              </Button>
-            </div>
-          </div>
-
-          {testSteps && (
-            <div className="p-space-sm rounded-xl bg-surface-container-low dark:bg-[#161f30] space-y-1 border border-border-subtle dark:border-white/[0.04]">
-              {testSteps.map((s, i) => (
-                <div
-                  key={`${s.step}-${i}`}
-                  className={`flex items-center gap-2 text-xs font-mono px-2 py-1 rounded-lg ${
-                    s.ok ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'
-                  }`}
-                >
-                  <span className="font-bold">{s.ok ? '✓' : '✗'}</span>
-                  <strong>{STEP_LABELS[s.step]}:</strong>
-                  <span className="truncate">{s.message}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        {column('imap')}
+        {column('smtp')}
       </div>
-
-      <div className="lg:col-span-4 space-y-space-lg">
-        <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm space-y-space-sm border border-border-subtle dark:border-white/[0.06]">
-          <div className="flex items-center justify-between">
-            <span className="font-caption text-caption uppercase tracking-wider text-on-surface-variant dark:text-text-muted font-semibold">{t('settings.node_bandwidth_label')}</span>
-            <span className="font-label-mono text-caption text-primary dark:text-indigo-400 font-bold">{currentKbps !== null ? `${currentKbps.toFixed(1)} KB/s` : '—'}</span>
-          </div>
-          <div className="h-14 w-full flex items-end">
-            {sparkline ? (
-              <svg className="w-full h-12 overflow-visible" fill="none" viewBox="0 0 200 40">
-                <defs>
-                  <linearGradient id="syncGradientSettings" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="#4f46e5" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d={sparkline.fill} fill="url(#syncGradientSettings)" />
-                <path d={sparkline.line} fill="none" stroke="#4f46e5" strokeLinecap="round" strokeWidth="2" />
-              </svg>
-            ) : (
-              <p className="text-caption text-on-surface-variant dark:text-text-muted w-full text-center pb-2">{t('settings.no_measurements_yet')}</p>
-            )}
-          </div>
-          <div className="flex items-center justify-between text-caption font-caption text-on-surface-variant dark:text-text-muted pt-1">
-            <span>
-              {t('settings.bandwidth_sent_label')} <strong className="text-on-surface dark:text-white">{formatBytesShort(totalBandwidthBytes)}</strong>
-            </span>
-            <span className="font-label-mono">{bandwidthPoints.length} {t('settings.no_bandwidth_measurements')}</span>
-          </div>
-        </div>
+      {form.imapSecurity === 'none' || form.smtpSecurity === 'none' ? (
+        <p className="flex items-center gap-1.5 text-xs text-warn">
+          <Icon name="warning" className="!text-[15px]" />
+          {t('settings.unencrypted_warning')}
+        </p>
+      ) : null}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button size="sm" variant="ghost" icon="lan" loading={testing} onClick={test}>
+          {t('settings.test_reachability')}
+        </Button>
+        <span className="flex-1" />
+        {dirty && (
+          <Button size="sm" variant="ghost" onClick={() => setForm(toForm(account))}>
+            {t('settings.discard_changes_btn')}
+          </Button>
+        )}
+        <Button size="sm" variant="primary" loading={saving} disabled={!dirty || hasErrors} onClick={save}>
+          {t('settings.save_changes_btn')}
+        </Button>
       </div>
+      {message && <Notice ok={message.ok}>{message.text}</Notice>}
+      {steps && (
+        <div className="rounded border border-line px-4 py-3 grid sm:grid-cols-2 gap-4" aria-live="polite">
+          {steps.map((group) => (
+            <div key={group.label}>
+              {group.label && <p className="eyebrow mb-1">{group.label}</p>}
+              <ul className="flex flex-col gap-1">
+                {group.steps.map((s, i) => (
+                  <li key={`${s.step}-${i}`} className="flex items-start gap-2 text-xs text-ink-2">
+                    <Icon name={s.ok ? 'check_circle' : 'cancel'} className={`!text-[15px] ${s.ok ? 'text-ok' : 'text-danger'}`} />
+                    <span>
+                      <span className="text-ink font-medium uppercase">{s.step}</span> — {s.message}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+          <p className="sm:col-span-2 text-2xs text-ink-3">{t('settings.test_reachability_note')}</p>
+        </div>
+      )}
     </div>
   )
 }
 
-function FormField({
-  label,
-  value,
-  error,
-  onChange
-}: {
-  label: string
-  value: string
-  error?: string | null
-  onChange: (v: string) => void
-}): JSX.Element {
-  return (
-    <div className="space-y-1">
-      <label className="font-caption text-caption text-on-surface-variant dark:text-text-muted font-medium">{label}</label>
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className={`w-full bg-surface-container-lowest dark:bg-[#121826] px-space-sm py-2 rounded-lg text-on-surface dark:text-white font-label-mono text-body-sm outline-none border ${
-          error ? 'border-error dark:border-rose-500' : 'border-border-subtle dark:border-white/[0.06]'
-        }`}
-      />
-      {error && <span className="text-[10px] text-error dark:text-rose-400">{error}</span>}
-    </div>
-  )
-}
-
-function SecurityField({ value, onChange }: { value: AccountSecurity; onChange: (v: AccountSecurity) => void }): JSX.Element {
+function PasswordForm({ account }: { account: AccountSummary }): JSX.Element {
   const { t } = useTranslation()
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+
+  useEffect(() => {
+    setPassword('')
+    setConfirm('')
+    setMessage(null)
+  }, [account.id])
+
+  const mismatch = confirm.length > 0 && password !== confirm
+  const save = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!password || mismatch) return
+    setSaving(true)
+    setMessage(null)
+    try {
+      await window.mailapp.accounts.updateCredential(account.id, password)
+      setMessage({ ok: true, text: t('settings.password_updated_msg') })
+      setPassword('')
+      setConfirm('')
+    } catch (err) {
+      setMessage({ ok: false, text: (err as Error).message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <div className="space-y-1">
-      <label className="font-caption text-caption text-on-surface-variant dark:text-text-muted font-medium">{t('settings.encryption_label')}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as AccountSecurity)}
-        className="w-full bg-surface-container-lowest dark:bg-[#121826] px-space-sm py-2 rounded-lg text-on-surface dark:text-white font-caption text-body-sm outline-none border border-border-subtle dark:border-white/[0.06]"
-      >
-        <option value="ssl">SSL / TLS</option>
-        <option value="starttls">{t('settings.security_starttls')}</option>
-        <option value="none">{t('settings.security_none')}</option>
-      </select>
-    </div>
+    <Block title={t('settings.password_title')} description={t('settings.password_local_desc')}>
+      <form onSubmit={save} className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label={t('settings.new_password_label')}>
+            {({ id }) => <input id={id} type="password" autoComplete="new-password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} />}
+          </Field>
+          <Field label={t('settings.confirm_new_password_label')} error={mismatch ? t('settings.passwords_not_match') : null}>
+            {({ id, describedBy, invalid }) => (
+              <input id={id} type="password" autoComplete="new-password" className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} />
+            )}
+          </Field>
+        </div>
+        <div className="flex items-center gap-3">
+          {message && <Notice ok={message.ok}>{message.text}</Notice>}
+          <span className="flex-1" />
+          <Button type="submit" size="sm" variant="primary" loading={saving} disabled={!password || password !== confirm}>
+            {t('settings.update_password_btn')}
+          </Button>
+        </div>
+      </form>
+    </Block>
   )
 }
 
-/* ---------------------------------------------------------------------- */
-/* Tab: Filtry i reguły                                                    */
-/* ---------------------------------------------------------------------- */
-
-function FiltersTab({ account }: { account: AccountSummary }): JSX.Element {
+function RulesBlock({ account }: { account: AccountSummary }): JSX.Element {
   const { t } = useTranslation()
   const [rules, setRules] = useState<MailRule[]>([])
   const [folders, setFolders] = useState<FolderSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [formOpen, setFormOpen] = useState(false)
   const [name, setName] = useState('')
-  const [conditionField, setConditionField] = useState<MailRuleConditionField>('from')
-  const [conditionContains, setConditionContains] = useState('')
-  const [targetFolderId, setTargetFolderId] = useState('')
+  const [field, setField] = useState<MailRuleConditionField>('from')
+  const [contains, setContains] = useState('')
+  const [target, setTarget] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [toDelete, setToDelete] = useState<MailRule | null>(null)
 
   async function refresh(): Promise<void> {
     setLoading(true)
@@ -720,7 +543,7 @@ function FiltersTab({ account }: { account: AccountSummary }): JSX.Element {
       const [r, f] = await Promise.all([window.mailapp.rules.list(account.id), window.mailapp.folders.list(account.id)])
       setRules(r)
       setFolders(f)
-      if (!targetFolderId && f.length > 0) setTargetFolderId(f[0].id)
+      setTarget((cur) => (cur && f.some((x) => x.id === cur) ? cur : (f.find((x) => x.type === 'archive') ?? f[0])?.id ?? ''))
     } finally {
       setLoading(false)
     }
@@ -732,20 +555,15 @@ function FiltersTab({ account }: { account: AccountSummary }): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [account.id])
 
-  async function handleCreate(): Promise<void> {
-    if (!name.trim() || !conditionContains.trim() || !targetFolderId) return
+  const create = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!name.trim() || !contains.trim() || !target) return
     setSaving(true)
     setError(null)
     try {
-      await window.mailapp.rules.create({
-        accountId: account.id,
-        name: name.trim(),
-        conditionField,
-        conditionContains: conditionContains.trim(),
-        actionMoveToFolderId: targetFolderId
-      })
+      await window.mailapp.rules.create({ accountId: account.id, name: name.trim(), conditionField: field, conditionContains: contains.trim(), actionMoveToFolderId: target })
       setName('')
-      setConditionContains('')
+      setContains('')
       setFormOpen(false)
       await refresh()
     } catch (err) {
@@ -755,588 +573,218 @@ function FiltersTab({ account }: { account: AccountSummary }): JSX.Element {
     }
   }
 
-  async function handleToggle(rule: MailRule): Promise<void> {
-    setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, isActive: !r.isActive } : r)))
-    await window.mailapp.rules.setActive(rule.id, !rule.isActive)
-  }
-
-  async function handleDelete(rule: MailRule): Promise<void> {
-    setRules((prev) => prev.filter((r) => r.id !== rule.id))
-    await window.mailapp.rules.delete(rule.id)
-  }
-
-  function folderLabel(id: string): string {
+  const label = (id: string): string => {
     const f = folders.find((x) => x.id === id)
-    if (!f) return t('settings.no_folder_placeholder')
-    return FOLDER_TYPE_KEYS[f.type] ? t(FOLDER_TYPE_KEYS[f.type]) : f.displayName
+    return f ? folderName(f, t) : '—'
   }
 
   return (
-    <div className="max-w-2xl space-y-space-lg">
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm space-y-space-md border border-border-subtle dark:border-white/[0.06]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-space-xs">
-            <span className="material-symbols-outlined text-secondary text-[20px]">filter_list</span>
-            <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white font-bold">{t('settings.rules_for_account', { email: account.email })}</h3>
-          </div>
-          {!formOpen && (
-            <Button variant="secondary" size="sm" onClick={() => setFormOpen(true)} icon={<span className="material-symbols-outlined text-[16px]">add</span>}>
-              {t('settings.new_rule_btn')}
-            </Button>
-          )}
-        </div>
-        <p className="font-body-sm text-caption text-on-surface-variant dark:text-text-muted">
-          {t('settings.rules_desc')}
-        </p>
-
-        {formOpen && (
-          <div className="p-space-md rounded-xl bg-surface-container-low/60 dark:bg-[#161f30]/60 space-y-space-sm border border-border-subtle dark:border-white/[0.04]">
-            <FormField label={t('settings.rule_name_label')} value={name} onChange={setName} />
-            <div className="grid grid-cols-2 gap-space-sm">
-              <div className="space-y-1">
-                <label className="font-caption text-caption text-on-surface-variant dark:text-text-muted font-medium">{t('settings.filter_if_label')}</label>
-                <select
-                  value={conditionField}
-                  onChange={(e) => setConditionField(e.target.value as MailRuleConditionField)}
-                  className="w-full bg-surface-container-lowest dark:bg-[#121826] px-space-sm py-2 rounded-lg text-on-surface dark:text-white text-body-sm outline-none border border-border-subtle dark:border-white/[0.06]"
-                >
+    <Block
+      title={t('settings.tab.filters')}
+      description={t('settings.rules_desc')}
+      action={
+        !formOpen && (
+          <Button size="sm" icon="add" onClick={() => setFormOpen(true)}>
+            {t('settings.new_rule_btn')}
+          </Button>
+        )
+      }
+    >
+      {formOpen && (
+        <form onSubmit={create} className="mb-4 rounded border border-line bg-raised p-4 flex flex-col gap-3">
+          <Field label={t('settings.rule_name_label')}>{({ id }) => <input id={id} autoFocus className="input" value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+          <div className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-3">
+            <Field label={t('settings.filter_if_label')}>
+              {({ id }) => (
+                <select id={id} className="select" value={field} onChange={(e) => setField(e.target.value as MailRuleConditionField)}>
                   <option value="from">{t('settings.filter_from_contains')}</option>
                   <option value="subject">{t('settings.filter_subject_contains')}</option>
                 </select>
-              </div>
-              <FormField label={t('settings.value_label')} value={conditionContains} onChange={setConditionContains} />
-            </div>
-            <div className="space-y-1">
-              <label className="font-caption text-caption text-on-surface-variant dark:text-text-muted font-medium">{t('settings.filter_move_to_folder')}</label>
-              <select
-                value={targetFolderId}
-                onChange={(e) => setTargetFolderId(e.target.value)}
-                className="w-full bg-surface-container-lowest dark:bg-[#121826] px-space-sm py-2 rounded-lg text-on-surface dark:text-white text-body-sm outline-none border border-border-subtle dark:border-white/[0.06]"
-              >
+              )}
+            </Field>
+            <Field label={t('settings.value_label')}>{({ id }) => <input id={id} className="input" value={contains} onChange={(e) => setContains(e.target.value)} />}</Field>
+          </div>
+          <Field label={t('settings.filter_move_to_folder')} error={error}>
+            {({ id, describedBy }) => (
+              <select id={id} className="select" value={target} onChange={(e) => setTarget(e.target.value)} aria-describedby={describedBy}>
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {FOLDER_TYPE_KEYS[f.type] ? t(FOLDER_TYPE_KEYS[f.type]) : f.displayName}
+                    {folderName(f, t)}
                   </option>
                 ))}
               </select>
-            </div>
-            {error && <p className="text-[11px] text-error dark:text-rose-400">{error}</p>}
-            <div className="flex items-center justify-end gap-2 pt-1">
-              <Button variant="ghost" size="sm" onClick={() => setFormOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleCreate} loading={saving} disabled={!name.trim() || !conditionContains.trim() || !targetFolderId}>
-                {t('settings.create_rule_btn')}
-              </Button>
-            </div>
+            )}
+          </Field>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" onClick={() => setFormOpen(false)}>
+              {t('common.cancel')}
+            </Button>
+            <Button type="submit" size="sm" variant="primary" loading={saving} disabled={!name.trim() || !contains.trim() || !target}>
+              {t('settings.create_rule_btn')}
+            </Button>
           </div>
-        )}
+        </form>
+      )}
 
-        <div className="space-y-space-sm">
-          {loading ? (
-            <p className="text-caption text-on-surface-variant dark:text-text-muted py-2">{t('settings.loading_ellipsis')}</p>
-          ) : rules.length === 0 ? (
-            <p className="text-caption text-on-surface-variant dark:text-text-muted py-2 text-center">{t('settings.no_rules_for_account')}</p>
-          ) : (
-            rules.map((rule) => (
-              <div key={rule.id} className="p-space-sm rounded-xl bg-surface-container-low/70 dark:bg-[#161f30]/60 space-y-1.5 border border-border-subtle dark:border-white/[0.04]">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${rule.isActive ? 'bg-primary' : 'bg-outline-variant'}`} />
-                    <span className="font-title-sm text-caption text-on-surface dark:text-white font-bold truncate">{rule.name}</span>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" checked={rule.isActive} onChange={() => handleToggle(rule)} className="sr-only peer" />
-                      <div className="w-7 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
-                    </label>
-                    <button type="button" onClick={() => handleDelete(rule)} className="p-1 rounded hover:bg-error-container dark:hover:bg-rose-950/40 text-on-surface-variant hover:text-error transition-colors">
-                      <span className="material-symbols-outlined text-[16px]">delete</span>
-                    </button>
-                  </div>
-                </div>
-                <p className="font-caption text-[11px] text-on-surface-variant dark:text-text-muted">
-                  {t(rule.conditionField === 'from' ? 'settings.sender_short' : 'settings.subject_short')} {t('settings.contains_word')} <code>{rule.conditionContains}</code> → {t('settings.move_to_word')}{' '}
-                  <span className="bg-primary-fixed dark:bg-indigo-950 text-on-primary-fixed-variant dark:text-indigo-300 px-1 rounded font-semibold">
-                    {folderLabel(rule.actionMoveToFolderId)}
-                  </span>
-                </p>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ---------------------------------------------------------------------- */
-/* Tab: Bezpieczeństwo                                                     */
-/* ---------------------------------------------------------------------- */
-
-function SecurityTab({ account }: { account: AccountSummary }): JSX.Element {
-  const { t } = useTranslation()
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
-
-  const canSave = password.length > 0 && password === confirmPassword
-
-  async function handleSave(): Promise<void> {
-    if (!canSave) return
-    setSaving(true)
-    setMessage(null)
-    try {
-      await window.mailapp.accounts.updateCredential(account.id, password)
-      setMessage({ ok: true, text: t('settings.password_updated_msg') })
-      setPassword('')
-      setConfirmPassword('')
-    } catch (err) {
-      setMessage({ ok: false, text: (err as Error).message })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="max-w-xl space-y-space-lg">
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm space-y-space-md border border-border-subtle dark:border-white/[0.06]">
-        <div className="flex items-center gap-space-xs">
-          <span className="material-symbols-outlined text-primary dark:text-indigo-400 text-[20px]">password</span>
-          <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white font-bold">{t('settings.account_password_title', { email: account.email })}</h3>
-        </div>
-        <p className="font-body-sm text-caption text-on-surface-variant dark:text-text-muted">
-          {t('settings.password_local_desc')}
-        </p>
-        <FormField label={t('settings.new_password_label')} value={password} onChange={setPassword} />
-        <FormField
-          label={t('settings.confirm_new_password_label')}
-          value={confirmPassword}
-          error={confirmPassword && password !== confirmPassword ? t('settings.passwords_not_match') : null}
-          onChange={setConfirmPassword}
-        />
-        {message && (
-          <div className={`p-space-sm rounded-lg text-caption ${message.ok ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' : 'bg-error-container text-on-error-container'}`}>
-            {message.text}
-          </div>
-        )}
-        <div className="flex justify-end">
-          <Button variant="primary" size="sm" onClick={handleSave} loading={saving} disabled={!canSave}>
-            {t('settings.update_password_btn')}
-          </Button>
-        </div>
-      </div>
-
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm space-y-space-sm border border-border-subtle dark:border-white/[0.06]">
-        <div className="flex items-center gap-space-xs">
-          <span className="material-symbols-outlined text-primary dark:text-indigo-400 text-[20px]">shield</span>
-          <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white font-bold">{t('settings.transport_encryption_title')}</h3>
-        </div>
-        <p className="font-body-sm text-caption text-on-surface-variant dark:text-text-muted">
-          {t('settings.transport_desc_pre')}{' '}
-          <span className="font-semibold text-on-surface dark:text-white">{t('settings.imap_smtp_tab_name')}</span>
-          {t('settings.transport_desc_post', { imap: account.imapSecurity.toUpperCase(), smtp: account.smtpSecurity.toUpperCase() })}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/* ---------------------------------------------------------------------- */
-/* Tab: Powiadomienia                                                      */
-/* ---------------------------------------------------------------------- */
-
-function NotificationsTab(): JSX.Element {
-  const { t } = useTranslation()
-  const [enabled, setEnabled] = useState(true)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    window.mailapp.settings.get('notifyNewMail').then((v) => {
-      setEnabled(v !== 'false')
-      setLoading(false)
-    })
-  }, [])
-
-  async function handleToggle(checked: boolean): Promise<void> {
-    setEnabled(checked)
-    await window.mailapp.settings.set('notifyNewMail', checked ? 'true' : 'false')
-  }
-
-  return (
-    <div className="max-w-xl">
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-space-lg shadow-sm space-y-space-md border border-border-subtle dark:border-white/[0.06]">
-        <div className="flex items-center gap-space-xs">
-          <span className="material-symbols-outlined text-primary dark:text-indigo-400 text-[20px]">notifications_active</span>
-          <h3 className="font-headline-md text-headline-md text-on-surface dark:text-white font-bold">{t('settings.desktop_notifications_title')}</h3>
-        </div>
-
-        <div className="flex items-start justify-between gap-space-sm">
-          <div className="space-y-0.5">
-            <span className="font-title-sm text-caption text-on-surface dark:text-white font-semibold">{t('settings.new_mail_label')}</span>
-            <p className="font-caption text-[11px] text-on-surface-variant dark:text-text-muted">
-              {t('settings.new_mail_toggle_desc')}
-            </p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
-            <input type="checkbox" checked={enabled} disabled={loading} onChange={(e) => handleToggle(e.target.checked)} className="sr-only peer" />
-            <div className="w-8 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
-          </label>
-        </div>
-
-        <p className="font-caption text-[11px] text-on-surface-variant dark:text-text-muted pt-1 border-t border-border-subtle dark:border-white/[0.06]">
-          {t('settings.notifications_always_desc')}
-        </p>
-      </div>
-    </div>
-  )
-}
-
-/* ---------------------------------------------------------------------- */
-/* Tab: Ogólne i język (General & Language)                                */
-/* ---------------------------------------------------------------------- */
-
-function GeneralTab(): JSX.Element {
-  const { language, setLanguage, t } = useTranslation()
-  const { theme, setTheme } = useTheme()
-
-  return (
-    <div className="max-w-2xl space-y-6">
-      {/* Język interfejsu */}
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-6 shadow-sm space-y-4 border border-border-subtle dark:border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-            <span className="material-symbols-outlined text-[20px]">translate</span>
-          </div>
-          <div>
-            <h3 className="font-headline-md text-base text-on-surface dark:text-white font-bold">
-              {t('settings.language.title', undefined, 'Język interfejsu (Application Language)')}
-            </h3>
-            <p className="text-xs text-on-surface-variant dark:text-slate-400">
-              {t('settings.language.desc', undefined, 'Wybierz preferowany język dla całego interfejsu AuraMail.')}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => setLanguage('pl')}
-            className={`p-3.5 rounded-xl border text-left flex items-center gap-3.5 transition-all ${
-              language === 'pl'
-                ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 shadow-xs ring-2 ring-indigo-500/20'
-                : 'border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-            }`}
-          >
-            <span className="text-3xl">🇵🇱</span>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold flex items-center justify-between">
-                <span>{t('settings.language.polish', undefined, 'Polski (PL)')}</span>
-                {language === 'pl' && (
-                  <span className="material-symbols-outlined text-[18px] text-indigo-600 dark:text-indigo-400">check_circle</span>
-                )}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">{t('settings.default_app_language')}</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setLanguage('en')}
-            className={`p-3.5 rounded-xl border text-left flex items-center gap-3.5 transition-all ${
-              language === 'en'
-                ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 shadow-xs ring-2 ring-indigo-500/20'
-                : 'border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-            }`}
-          >
-            <span className="text-3xl">🇬🇧</span>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-bold flex items-center justify-between">
-                <span>{t('settings.language.english', undefined, 'English (EN)')}</span>
-                {language === 'en' && (
-                  <span className="material-symbols-outlined text-[18px] text-indigo-600 dark:text-indigo-400">check_circle</span>
-                )}
-              </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400">{t('settings.english_ui_desc')}</div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {/* Motyw graficzny */}
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-6 shadow-sm space-y-4 border border-border-subtle dark:border-white/[0.06]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-            <span className="material-symbols-outlined text-[20px]">palette</span>
-          </div>
-          <div>
-            <h3 className="font-headline-md text-base text-on-surface dark:text-white font-bold">
-              {t('onboarding.appearance.theme', undefined, 'Motyw kolorystyczny')}
-            </h3>
-            <p className="text-xs text-on-surface-variant dark:text-slate-400">
-              {t('onboarding.appearance.subtitle', undefined, 'Wybierz tryb jasny, ciemny lub zsynchronizowany z systemem operacyjnym.')}
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3 pt-2">
-          {(['light', 'dark', 'system'] as ThemeMode[]).map((m) => (
-            <button
-              key={m}
-              type="button"
-              onClick={() => setTheme(m)}
-              className={`p-3.5 rounded-xl border text-center flex flex-col items-center gap-2 transition-all ${
-                theme === m
-                  ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 shadow-xs ring-2 ring-indigo-500/20'
-                  : 'border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[24px]">
-                {m === 'light' ? 'light_mode' : m === 'dark' ? 'dark_mode' : 'brightness_auto'}
+      {loading ? (
+        <p className="text-sm text-ink-3">{t('settings.loading_ellipsis')}</p>
+      ) : rules.length === 0 ? (
+        !formOpen && <p className="text-sm text-ink-3">{t('settings.no_rules_for_account')}</p>
+      ) : (
+        <ul className="border border-line rounded divide-y divide-line bg-raised">
+          {rules.map((rule) => (
+            <li key={rule.id} className="flex items-center gap-3 pl-3 pr-2 py-2">
+              <span className="flex-1 min-w-0">
+                <span className={`block text-sm font-medium truncate ${rule.isActive ? 'text-ink' : 'text-ink-3'}`}>{rule.name}</span>
+                <span className="block text-xs text-ink-3 truncate">
+                  {t(rule.conditionField === 'from' ? 'settings.sender_short' : 'settings.subject_short')} {t('settings.contains_word')} „{rule.conditionContains}” → {label(rule.actionMoveToFolderId)}
+                </span>
               </span>
-              <span className="text-xs font-semibold">
-                {m === 'light'
-                  ? t('onboarding.appearance.theme.light', undefined, 'Jasny')
-                  : m === 'dark'
-                  ? t('onboarding.appearance.theme.dark', undefined, 'Ciemny')
-                  : t('onboarding.appearance.theme.system', undefined, 'Systemowy')}
-              </span>
-            </button>
+              <input
+                type="checkbox"
+                role="switch"
+                className="switch"
+                checked={rule.isActive}
+                aria-label={rule.name}
+                onChange={async () => {
+                  setRules((prev) => prev.map((r) => (r.id === rule.id ? { ...r, isActive: !r.isActive } : r)))
+                  await window.mailapp.rules.setActive(rule.id, !rule.isActive)
+                }}
+              />
+              <IconButton size="sm" icon="delete" label={t('common.delete')} onClick={() => setToDelete(rule)} />
+            </li>
           ))}
-        </div>
-      </div>
+        </ul>
+      )}
 
-      <StartupSection />
-    </div>
+      <ConfirmDialog
+        open={toDelete !== null}
+        onClose={() => setToDelete(null)}
+        onConfirm={async () => {
+          if (!toDelete) return
+          await window.mailapp.rules.delete(toDelete.id)
+          setRules((prev) => prev.filter((r) => r.id !== toDelete.id))
+        }}
+        title={t('settings.delete_rule_title')}
+        description={toDelete ? t('settings.delete_rule_desc', { name: toDelete.name }) : undefined}
+        confirmLabel={t('common.delete')}
+        danger
+      />
+    </Block>
   )
 }
 
-/* ---------------------------------------------------------------------- */
-/* Sekcja: Uruchamianie z systemem (autostart + start zminimalizowany)     */
-/* ---------------------------------------------------------------------- */
-
-function StartupSection(): JSX.Element {
+function BandwidthBlock({ account }: { account: AccountSummary }): JSX.Element | null {
   const { t } = useTranslation()
-  const [prefs, setPrefs] = useState<{ openAtLogin: boolean; startMinimized: boolean }>({
-    openAtLogin: false,
-    startMinimized: false
-  })
-  const [loading, setLoading] = useState(true)
+  const [points, setPoints] = useState<BandwidthPoint[]>([])
 
   useEffect(() => {
-    window.mailapp.system.getLoginItemPrefs().then((p) => {
-      setPrefs(p)
-      setLoading(false)
-    })
-  }, [])
+    let cancelled = false
+    window.mailapp.bandwidth.recent(account.id).then((p) => !cancelled && setPoints(p))
+    return () => {
+      cancelled = true
+    }
+  }, [account.id])
 
-  async function update(patch: Partial<{ openAtLogin: boolean; startMinimized: boolean }>): Promise<void> {
-    const next = { ...prefs, ...patch }
-    setPrefs(next)
-    await window.mailapp.system.setLoginItemPrefs(next)
-  }
+  const path = useMemo(() => {
+    if (points.length < 2) return null
+    const max = Math.max(...points.map((p) => p.kbps), 1)
+    const step = 300 / (points.length - 1)
+    return 'M' + points.map((p, i) => `${(i * step).toFixed(1)},${(38 - (p.kbps / max) * 34).toFixed(1)}`).join(' L')
+  }, [points])
+
+  const total = points.reduce((s, p) => s + p.bytesTransferred, 0)
+  const last = points.length ? points[points.length - 1].kbps : null
 
   return (
-    <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-6 shadow-sm space-y-4 border border-border-subtle dark:border-white/[0.06]">
-      <div className="flex items-center gap-2.5">
-        <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-          <span className="material-symbols-outlined text-[20px]">power_settings_new</span>
-        </div>
-        <div>
-          <h3 className="font-headline-md text-base text-on-surface dark:text-white font-bold">
-            {t('settings.startup.title', undefined, 'Uruchamianie z systemem')}
-          </h3>
-          <p className="text-xs text-on-surface-variant dark:text-slate-400">
-            {t('settings.startup.desc', undefined, 'Ustaw, czy AuraMail ma startować automatycznie razem z systemem.')}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-start justify-between gap-3 pt-1">
-        <div className="space-y-0.5">
-          <span className="text-xs font-semibold text-on-surface dark:text-white">
-            {t('settings.startup.launch_at_login_label', undefined, 'Uruchamiaj przy starcie systemu')}
-          </span>
-          <p className="text-[11px] text-on-surface-variant dark:text-text-muted">
-            {t(
-              'settings.startup.launch_at_login_desc',
-              undefined,
-              'AuraMail wystartuje automatycznie zaraz po zalogowaniu do systemu.'
-            )}
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
-          <input
-            type="checkbox"
-            checked={prefs.openAtLogin}
-            disabled={loading}
-            onChange={(e) => update({ openAtLogin: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="w-8 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
-        </label>
-      </div>
-
-      <div className={`flex items-start justify-between gap-3 pt-1 transition-opacity ${prefs.openAtLogin ? '' : 'opacity-50'}`}>
-        <div className="space-y-0.5">
-          <span className="text-xs font-semibold text-on-surface dark:text-white">
-            {t('settings.startup.start_minimized_label', undefined, 'Startuj zminimalizowana do zasobnika')}
-          </span>
-          <p className="text-[11px] text-on-surface-variant dark:text-text-muted">
-            {t(
-              'settings.startup.start_minimized_desc',
-              undefined,
-              'Okno nie pojawi się przy starcie — aplikacja pozostanie tylko w zasobniku systemowym (tray).'
-            )}
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-0.5">
-          <input
-            type="checkbox"
-            checked={prefs.startMinimized}
-            disabled={loading || !prefs.openAtLogin}
-            onChange={(e) => update({ startMinimized: e.target.checked })}
-            className="sr-only peer"
-          />
-          <div className="w-8 h-4 bg-surface-container dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-primary" />
-        </label>
-      </div>
-    </div>
+    <Block title={t('settings.node_bandwidth_label')} description={t('settings.bandwidth_desc')}>
+      {path ? (
+        <figure className="flex items-end gap-6">
+          <svg viewBox="0 0 300 40" className="flex-1 h-12 overflow-visible" role="img" aria-label={t('settings.node_bandwidth_label')}>
+            <path d={path} fill="none" stroke="var(--ink-2)" strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <figcaption className="text-right flex-shrink-0">
+            <span className="block font-serif text-xl text-ink tabular-nums">{last !== null ? `${last.toFixed(0)} KB/s` : '—'}</span>
+            <span className="block text-xs text-ink-3">
+              {t('settings.bandwidth_sent_label')} {formatBytes(total)} · {points.length} {t('settings.no_bandwidth_measurements')}
+            </span>
+          </figcaption>
+        </figure>
+      ) : (
+        <p className="text-sm text-ink-3">{t('settings.no_measurements_yet')}</p>
+      )}
+    </Block>
   )
 }
 
-/* ---------------------------------------------------------------------- */
-/* Tab: Zarządzanie etykietami (Labels)                                    */
-/* ---------------------------------------------------------------------- */
+/* ------------------------------------------------------------------- Labels */
 
-function LabelsTab(): JSX.Element {
+function LabelsSection(): JSX.Element {
   const { labels, loadLabels, deleteLabel } = useLabelsStore()
   const { t } = useTranslation()
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingLabel, setEditingLabel] = useState<LabelSummary | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<LabelSummary | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const [editing, setEditing] = useState<LabelSummary | null>(null)
+  const [toDelete, setToDelete] = useState<LabelSummary | null>(null)
 
   useEffect(() => {
     loadLabels()
   }, [loadLabels])
 
-  const handleCreate = (): void => {
-    setEditingLabel(null)
-    setDialogOpen(true)
-  }
-
-  const handleEdit = (lbl: LabelSummary): void => {
-    setEditingLabel(lbl)
-    setDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async (): Promise<void> => {
-    if (!deleteTarget) return
-    setIsDeleting(true)
-    try {
-      await deleteLabel(deleteTarget.id)
-      setDeleteTarget(null)
-    } finally {
-      setIsDeleting(false)
-    }
-  }
-
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="bg-surface-container-lowest dark:bg-[#121826] rounded-xl p-6 shadow-sm border border-border-subtle dark:border-white/[0.06] space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <span className="material-symbols-outlined text-[20px]">label</span>
-            </div>
-            <div>
-              <h3 className="font-headline-md text-base text-on-surface dark:text-white font-bold">
-                {t('settings.labels.title', undefined, 'Zarządzanie etykietami')}
-              </h3>
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">
-                {t('settings.labels.desc', undefined, 'Twórz, edytuj kolory i organizuj swoje maile za pomocą etykiet.')}
-              </p>
-            </div>
-          </div>
+    <Block
+      title={t('settings.labels.title')}
+      description={t('settings.labels.desc')}
+      action={
+        <Button
+          size="sm"
+          icon="add"
+          onClick={() => {
+            setEditing(null)
+            setDialogOpen(true)
+          }}
+        >
+          {t('sidebar.add_label')}
+        </Button>
+      }
+    >
+      {labels.length === 0 ? (
+        <p className="text-sm text-ink-3">{t('settings.no_labels_yet')}</p>
+      ) : (
+        <ul className="border border-line rounded divide-y divide-line bg-raised">
+          {labels.map((lbl) => (
+            <li key={lbl.id} className="flex items-center gap-3 pl-3 pr-2 py-2">
+              <span className="chip-dot !w-2.5 !h-2.5" style={{ backgroundColor: lbl.color }} />
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-medium text-ink truncate">{getLocalizedLabelName(lbl, t)}</span>
+                <span className="block text-xs text-ink-3">{t('settings.label_message_count', { count: lbl.messageCount })}</span>
+              </span>
+              <IconButton
+                size="sm"
+                icon="edit"
+                label={t('common.edit')}
+                onClick={() => {
+                  setEditing(lbl)
+                  setDialogOpen(true)
+                }}
+              />
+              <IconButton size="sm" icon="delete" label={t('common.delete')} onClick={() => setToDelete(lbl)} />
+            </li>
+          ))}
+        </ul>
+      )}
 
-          <Button variant="primary" size="sm" onClick={handleCreate} icon={<span className="material-symbols-outlined text-[18px]">add</span>}>
-            {t('sidebar.add_label', undefined, 'Dodaj etykietę')}
-          </Button>
-        </div>
-
-        {/* Lista etykiet */}
-        <div className="divide-y divide-slate-100 dark:divide-white/[0.04] border border-slate-200/80 dark:border-white/[0.06] rounded-xl overflow-hidden">
-          {labels.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">
-              {t('settings.no_labels_yet')}
-            </div>
-          ) : (
-            labels.map((lbl) => (
-              <div
-                key={lbl.id}
-                className="flex items-center justify-between p-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className="w-4 h-4 rounded-full flex-shrink-0 shadow-2xs border border-white dark:border-slate-800"
-                    style={{ backgroundColor: lbl.color }}
-                  />
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {getLocalizedLabelName(lbl, t)}
-                    </div>
-                    <div className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-                      {lbl.messageCount !== undefined ? t('settings.label_message_count', { count: lbl.messageCount }) : t('settings.label_word')}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => handleEdit(lbl)}
-                    className="p-1.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
-                    title={t('common.edit', undefined, 'Edytuj')}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(lbl)}
-                    className="p-1.5 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/60 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
-                    title={t('common.delete', undefined, 'Usuń')}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      <LabelDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        initialLabel={editingLabel || undefined}
-      />
-
+      <LabelDialog open={dialogOpen} onClose={() => setDialogOpen(false)} initialLabel={editing} />
       <ConfirmDialog
-        open={deleteTarget !== null}
-        onClose={() => setDeleteTarget(null)}
-        onConfirm={handleDeleteConfirm}
-        loading={isDeleting}
+        open={toDelete !== null}
+        onClose={() => setToDelete(null)}
+        onConfirm={async () => {
+          if (toDelete) await deleteLabel(toDelete.id)
+        }}
         title={t('settings.delete_label_confirm_title')}
-        description={
-          deleteTarget
-            ? t('settings.delete_label_confirm_desc', { name: deleteTarget.name })
-            : undefined
-        }
-        confirmLabel={t('common.delete', undefined, 'Usuń')}
+        description={toDelete ? t('settings.delete_label_confirm_desc', { name: toDelete.name }) : undefined}
+        confirmLabel={t('common.delete')}
         danger
       />
-    </div>
+    </Block>
   )
 }

@@ -1,14 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import DOMPurify from 'dompurify'
+import React, { useEffect, useRef, useState } from 'react'
 import { useMailStore } from '../state/mail-store'
 import { useLabelsStore } from '../state/labels-store'
 import { useTranslation, getLocalizedLabelName } from '../i18n'
-import { useTheme } from '../theme/ThemeContext'
 import { EmptyState } from './ui/EmptyState'
 import { Skeleton } from './ui/Skeleton'
 import { Button, Icon, IconButton } from './ui/Button'
 import { ContextMenu, type ContextMenuItem } from './ui/ContextMenu'
-import { buildQuote, escapeHtml, prefixSubject, textToHtml } from '../utils/quote'
+import { buildQuote, prefixSubject, textToHtml } from '../utils/quote'
+import { MailBody, hasRemoteImages as detectRemoteImages } from './MailBody'
 import type { AttachmentSummary, MessageDetail } from '@shared/ipc'
 
 interface ReaderProps {
@@ -20,46 +19,6 @@ interface ReaderProps {
   isDossierOpen?: boolean
   onOpenThreadDossier?: () => void
 }
-
-// Remote url(...) inside CSS — stripped (with <img> src) until the user allows remote content,
-// because they work exactly like tracking pixels.
-const REMOTE_CSS_URL = /url\(\s*(['"]?)(https?:\/\/[^'")]+)\1\s*\)/gi
-
-function stripRemoteCssUrls(css: string): string {
-  return css.replace(REMOTE_CSS_URL, 'none').replace(/@import\s+(url\()?['"]?https?:\/\/[^;]+;?/gi, '')
-}
-
-function sanitizeHtml(html: string, allowRemoteImages: boolean): string {
-  const clean = DOMPurify.sanitize(html, {
-    // <style> stays: real-world HTML mail depends on it. <link> goes: it would fetch remote CSS.
-    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'link', 'base'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick']
-  })
-  const container = document.createElement('div')
-  container.innerHTML = clean
-  if (!allowRemoteImages) {
-    container.querySelectorAll('img').forEach((img) => {
-      const src = img.getAttribute('src') ?? ''
-      if (!src.startsWith('data:')) {
-        img.setAttribute('data-blocked-src', src)
-        img.removeAttribute('src')
-      }
-    })
-    container.querySelectorAll<HTMLElement>('[style]').forEach((el) => {
-      const style = el.getAttribute('style')
-      REMOTE_CSS_URL.lastIndex = 0
-      if (style && REMOTE_CSS_URL.test(style)) el.setAttribute('style', stripRemoteCssUrls(style))
-      REMOTE_CSS_URL.lastIndex = 0
-    })
-    container.querySelectorAll('style').forEach((tag) => {
-      tag.textContent = stripRemoteCssUrls(tag.textContent ?? '')
-    })
-  }
-  return container.innerHTML
-}
-
-/** Reads a CSS custom property from the app so the mail iframe matches the active theme. */
-const cssVar = (name: string): string => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
@@ -96,14 +55,12 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
   } = useMailStore()
   const { labels, toggleMessageLabel } = useLabelsStore()
   const { t, formatDate } = useTranslation()
-  const { resolvedTheme } = useTheme()
   const [allowRemoteImages, setAllowRemoteImages] = useState(false)
   const [quickReply, setQuickReply] = useState('')
   const [quickState, setQuickState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
   const [quickError, setQuickError] = useState<string | null>(null)
   const [menu, setMenu] = useState<{ x: number; y: number; items: ContextMenuItem[] } | null>(null)
   const [savingAttachment, setSavingAttachment] = useState<string | null>(null)
-  const bodyIframeRef = useRef<HTMLIFrameElement>(null)
   const autoMarkedIdsRef = useRef<Set<string>>(new Set())
 
   // Reset per-message UI state.
@@ -158,29 +115,6 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
     return () => window.removeEventListener('keydown', onKey)
   })
 
-  const isDark = resolvedTheme === 'dark'
-  const srcDoc = useMemo(() => {
-    if (!detail) return ''
-    const body = detail.bodyHtml
-      ? sanitizeHtml(detail.bodyHtml, allowRemoteImages)
-      : `<pre style="white-space:pre-wrap;font:inherit">${escapeHtml(detail.bodyPlain ?? '')}</pre>`
-    const [bg, ink, ink2, line, accent] = ['--panel', '--ink', '--ink-2', '--line-strong', '--accent-ink'].map(cssVar)
-    return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-*{box-sizing:border-box}
-html,body{background:${bg};color:${ink};font-family:"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-size:14.5px;line-height:1.65;overflow-wrap:anywhere}
-body{margin:0;padding:4px 32px 40px;max-width:820px}
-a{color:${accent}}
-blockquote{margin:0 0 1em;padding-left:12px;border-left:2px solid ${line};color:${ink2}}
-hr{border:0;border-top:1px solid ${line}}
-img{max-width:100%;height:auto}
-table{max-width:100%}
-pre,code{font-family:"Cascadia Mono",Consolas,monospace;font-size:.9em}
-pre{white-space:pre-wrap}
-</style></head><body>${body}</body></html>`
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail, allowRemoteImages, isDark])
-
   if (!selectedMessageId) {
     return (
       <EmptyState
@@ -220,7 +154,7 @@ pre{white-space:pre-wrap}
   const archiveFolder = folders.find((f) => f.type === 'archive')
   const trashFolder = folders.find((f) => f.type === 'trash')
   const inArchive = detail.folderId === archiveFolder?.id
-  const hasRemoteImages = Boolean(detail.bodyHtml && /<img[^>]+src=["']?https?:/i.test(detail.bodyHtml))
+  const hasRemoteImages = detectRemoteImages(detail.bodyHtml)
   const sender = detail.fromName || detail.fromAddr
   const recipients = parseRecipients(detail.toJson)
   const cc = parseRecipients(detail.ccJson)
@@ -424,23 +358,7 @@ pre{white-space:pre-wrap}
 
       {/* Body */}
       <div className="flex-1 relative min-h-[240px]">
-        <iframe
-          ref={bodyIframeRef}
-          title={t('reader.iframe_title')}
-          sandbox="allow-same-origin"
-          srcDoc={srcDoc}
-          className="absolute inset-0 w-full h-full border-0 bg-panel"
-          onLoad={() => {
-            // The sandbox blocks navigation; route link clicks to the system browser instead.
-            const doc = bodyIframeRef.current?.contentDocument
-            doc?.addEventListener('click', (event) => {
-              const href = (event.target as HTMLElement | null)?.closest('a')?.getAttribute('href')
-              if (!href) return
-              event.preventDefault()
-              if (/^(https?:|mailto:)/i.test(href)) window.mailapp.shell.openExternal(href)
-            })
-          }}
-        />
+        <MailBody html={detail.bodyHtml} plain={detail.bodyPlain} allowRemoteImages={allowRemoteImages} title={t('reader.iframe_title')} />
       </div>
 
       {/* Quick reply — sends for real; "open in editor" keeps the typed text. */}
