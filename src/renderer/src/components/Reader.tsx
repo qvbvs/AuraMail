@@ -130,7 +130,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
   }, [detail?.id, setMessageFlags])
 
   const quoteHeader = (d: MessageDetail): string =>
-    t('reader.quote_header', { date: formatDate(d.dateReceived, { dateStyle: 'medium', timeStyle: 'short' }), name: d.fromName || d.fromAddr })
+    t('reader.quote_header', { date: formatDate(d.dateReceived, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }), name: d.fromName || d.fromAddr })
 
   const reply = (extraHtml = ''): void => {
     if (!detail) return
