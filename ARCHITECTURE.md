@@ -25,7 +25,7 @@ Electron divides the application into isolated process boundaries. AuraMail stri
 
 Every `BrowserWindow` instance enforces rigorous security constraints:
 - `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, `webSecurity: true`, `allowRunningInsecureContent: false`.
-- Production build enforcement: Strict `Content-Security-Policy` header (`default-src 'self'`, with exceptions only for Google Fonts/icons).
+- Production build enforcement: Strict `Content-Security-Policy` header (`default-src 'self'`; fonts and icons are bundled, so no third-party origins are allowed).
 - Strict navigation hooks (`will-navigate` and `setWindowOpenHandler`): Any URL outside `file://` (and local dev server) opens exclusively in the user's default external browser, never inside the application window.
 - Window close interception: Closing the main window (`close`) hides it to the system tray rather than terminating the process. Complete shutdown occurs only via tray exit or explicit `app.quit()`.
 

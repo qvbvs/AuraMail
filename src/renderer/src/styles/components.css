@@ -691,3 +691,8 @@
 .mail-body th {
   padding: 4px 8px;
 }
+
+/* Menus take focus for keyboard handling; the active item already shows where focus is. */
+.context-menu:focus-visible {
+  outline: none;
+}
