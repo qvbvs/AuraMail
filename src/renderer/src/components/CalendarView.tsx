@@ -627,7 +627,7 @@ export function CalendarView({ onBackToMail, onOpenCompose }: CalendarViewProps)
           form && (
             <>
               {form.id ? (
-                <Button variant="danger-subtle" size="sm" onClick={() => setDeleteConfirmOpen(true)} disabled={saving} className="mr-auto">
+                <Button variant="danger-ghost" size="sm" onClick={() => setDeleteConfirmOpen(true)} disabled={saving} className="mr-auto">
                   {t('common.delete')}
                 </Button>
               ) : (

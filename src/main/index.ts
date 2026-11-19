@@ -106,14 +106,14 @@ function createWindow(): BrowserWindow {
   return win
 }
 
-// CSP wymuszona w buildzie produkcyjnym z dopuszczeniem fontów i ikon Google
+// CSP wymuszona w buildzie produkcyjnym; fonty i ikony są w paczce aplikacji
 function applyContentSecurityPolicy(): void {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com;"
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https: blob:; connect-src 'self';"
         ]
       }
     })

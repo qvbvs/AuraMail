@@ -52,7 +52,7 @@ export function App(): JSX.Element {
     ;(window as any).__setComposePrefill = setComposePrefill
   }, [])
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.innerWidth < 1024)
   const [mobileActivePane, setMobileActivePane] = useState<'list' | 'reader'>('list')
   const [windowWidth, setWindowWidth] = useState(window.innerWidth)
 
@@ -87,9 +87,7 @@ export function App(): JSX.Element {
   useEffect(() => {
     const handleResize = (): void => {
       setWindowWidth(window.innerWidth)
-      if (window.innerWidth <= 1024) {
-        setSidebarCollapsed(true)
-      }
+      if (window.innerWidth < 1024) setSidebarCollapsed(true)
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
@@ -222,22 +220,14 @@ export function App(): JSX.Element {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  const handleReply = useCallback((to: string, subject: string) => {
-    setComposePrefill({
-      to,
-      subject,
-      bodyHtml: t('app.quote_reply_prefix')
-    })
+  const handleReply = useCallback((to: string, subject: string, bodyHtml?: string) => {
+    setComposePrefill({ to, subject, bodyHtml: bodyHtml ?? '' })
     setIsComposing(true)
     setCurrentView('mail')
-  }, [t])
+  }, [])
 
   const handleForward = useCallback((subject: string, bodyHtml: string) => {
-    setComposePrefill({
-      to: '',
-      subject,
-      bodyHtml: `${t('app.quote_fwd_prefix')}${bodyHtml}`
-    })
+    setComposePrefill({ to: '', subject, bodyHtml: `<p></p><p>${t('app.quote_fwd_prefix')}</p>${bodyHtml}` })
     setIsComposing(true)
     setCurrentView('mail')
   }, [t])
@@ -246,11 +236,8 @@ export function App(): JSX.Element {
 
   if (checkingOnboarding) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-surface-container-lowest dark:bg-background-dark text-on-surface dark:text-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-body-sm text-on-surface-variant dark:text-text-muted">{t('app.initializing')}</span>
-        </div>
+      <div className="w-screen h-screen flex items-center justify-center bg-canvas" role="status" aria-live="polite">
+        <span className="text-sm text-ink-3">{t('app.initializing')}</span>
       </div>
     )
   }
@@ -272,138 +259,105 @@ export function App(): JSX.Element {
     )
   }
 
+  const closeSidebarOnNarrow = (): void => {
+    if (windowWidth < 1024) setSidebarCollapsed(true)
+  }
+  const openCompose = (prefill: ComposePrefill = {}): void => {
+    setComposePrefill(prefill)
+    setIsComposing(true)
+    setCurrentView('mail')
+    if (isMobile) setMobileActivePane('reader')
+  }
+
   return (
-    <div className="app-container">
-      {/* Topbar Header */}
+    <div className="app-shell">
       <Topbar
         onToggleSidebar={() => setSidebarCollapsed((prev) => !prev)}
         sidebarCollapsed={sidebarCollapsed}
-        onOpenStats={() => setStatsOpen(true)}
-        onOpenSettings={() => setCurrentView('settings')}
         onOpenCommandPalette={() => setCommandPaletteOpen(true)}
         onGoHome={() => setCurrentView('mail')}
       />
 
-      {/* Main Responsive Workspace */}
       <div className="app-workspace">
-        {/* Sidebar */}
         <div className={`pane-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
           <Sidebar
             currentView={currentView}
             onNavigateView={(view) => {
               setCurrentView(view)
               if (view !== 'mail') setIsComposing(false)
+              closeSidebarOnNarrow()
             }}
             onOpenCompose={() => {
-              setComposePrefill({})
-              setIsComposing(true)
-              setCurrentView('mail')
-              if (isMobile) setMobileActivePane('reader')
+              openCompose()
+              closeSidebarOnNarrow()
             }}
+            onOpenStats={() => setStatsOpen(true)}
           />
         </div>
-
-        {/* View Switcher based on currentView */}
-        {currentView === 'settings' ? (
-          <SettingsView
-            onBackToMail={() => setCurrentView('mail')}
-            onOpenAddAccount={() => setAddAccountOpen(true)}
-          />
-        ) : currentView === 'calendar' ? (
-          <CalendarView
-            onBackToMail={() => setCurrentView('mail')}
-            onOpenCompose={(prefill) => {
-              setComposePrefill(prefill || {})
-              setIsComposing(true)
-              setCurrentView('mail')
-            }}
-          />
-        ) : currentView === 'files' ? (
-          <FilesDriveView
-            onBackToMail={() => setCurrentView('mail')}
-            onOpenThread={() => setCurrentView('thread-dossier')}
-          />
-        ) : currentView === 'thread-dossier' ? (
-          <ThreadDossierView
-            onBackToList={() => setCurrentView('mail')}
-            onOpenCompose={(prefill) => {
-              setComposePrefill(prefill || {})
-              setIsComposing(true)
-              setCurrentView('mail')
-            }}
-          />
-        ) : (
-          /* Default Mailbox View (3 Columns) */
-          <>
-            {/* Column 2: Message List Pane */}
-            <div
-              className="pane-list"
-              style={{
-                display: isMobile && mobileActivePane === 'reader' ? 'none' : 'flex'
-              }}
-            >
-              <MessageList onOpenThreadDossier={() => setCurrentView('thread-dossier')} />
-            </div>
-
-            {/* Column 3: Embedded Composer OR Message Reader & Dossier */}
-            <div
-              className="pane-reader"
-              style={{
-                display: isMobile && mobileActivePane === 'list' ? 'none' : 'flex',
-                flexDirection: 'row'
-              }}
-            >
-              {isComposing ? (
-                /* Embedded Composer Pane (NOT A MODAL!) */
-                <ComposerPane
-                  onClose={() => setIsComposing(false)}
-                  initialTo={composePrefill.to}
-                  initialSubject={composePrefill.subject}
-                  initialBodyHtml={composePrefill.bodyHtml}
-                />
-              ) : (
-                /* Reader & Contact Dossier */
-                <>
-                  <div className="flex-1 min-w-0 h-full overflow-hidden">
-                    <Reader
-                      onReply={handleReply}
-                      onForward={handleForward}
-                      onBack={() => setMobileActivePane('list')}
-                      isMobile={isMobile}
-                      onToggleDossier={() => setDossierOpen((prev) => !prev)}
-                      isDossierOpen={dossierOpen}
-                      onOpenThreadDossier={() => setCurrentView('thread-dossier')}
-                    />
-                  </div>
-
-                  {/* CRM Contact Dossier Side Panel */}
-                  {dossierOpen && selectedMessageId && !isMobile && (
-                    <ContactDossier
-                      onClose={() => setDossierOpen(false)}
-                      onOpenCompose={(prefill) => {
-                        setComposePrefill(prefill)
-                        setIsComposing(true)
-                      }}
-                      width={dossierWidth}
-                      onWidthChange={handleDossierWidthChange}
-                    />
-                  )}
-                </>
-              )}
-            </div>
-          </>
+        {!sidebarCollapsed && windowWidth < 1024 && (
+          <div className="absolute inset-0 z-30 bg-[var(--scrim)]" aria-hidden="true" onClick={() => setSidebarCollapsed(true)} />
         )}
+
+        <main className="pane-sheet">
+          {currentView === 'settings' ? (
+            <SettingsView onBackToMail={() => setCurrentView('mail')} onOpenAddAccount={() => setAddAccountOpen(true)} />
+          ) : currentView === 'calendar' ? (
+            <CalendarView onBackToMail={() => setCurrentView('mail')} onOpenCompose={(prefill) => openCompose(prefill || {})} />
+          ) : currentView === 'files' ? (
+            <FilesDriveView onBackToMail={() => setCurrentView('mail')} onOpenThread={() => setCurrentView('thread-dossier')} />
+          ) : currentView === 'thread-dossier' ? (
+            <ThreadDossierView onBackToList={() => setCurrentView('mail')} onOpenCompose={(prefill) => openCompose(prefill || {})} />
+          ) : (
+            <>
+              <div className="pane-list" hidden={isMobile && mobileActivePane === 'reader'}>
+                <MessageList onOpenThreadDossier={() => setCurrentView('thread-dossier')} />
+              </div>
+
+              <div className="pane-reader" hidden={isMobile && mobileActivePane === 'list'}>
+                {isComposing ? (
+                  <ComposerPane
+                    onClose={() => {
+                      setIsComposing(false)
+                      if (isMobile) setMobileActivePane('list')
+                    }}
+                    initialTo={composePrefill.to}
+                    initialSubject={composePrefill.subject}
+                    initialBodyHtml={composePrefill.bodyHtml}
+                  />
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0 h-full overflow-hidden">
+                      <Reader
+                        onReply={handleReply}
+                        onForward={handleForward}
+                        onBack={() => setMobileActivePane('list')}
+                        isMobile={isMobile}
+                        onToggleDossier={() => setDossierOpen((prev) => !prev)}
+                        isDossierOpen={dossierOpen}
+                        onOpenThreadDossier={() => setCurrentView('thread-dossier')}
+                      />
+                    </div>
+                    {dossierOpen && selectedMessageId && windowWidth >= 1280 && (
+                      <ContactDossier
+                        onClose={() => setDossierOpen(false)}
+                        onOpenCompose={(prefill) => openCompose(prefill)}
+                        width={dossierWidth}
+                        onWidthChange={handleDossierWidthChange}
+                      />
+                    )}
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </main>
       </div>
 
       {/* Command Palette (Spotlight ⌘K) */}
       <CommandPalette
         open={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
-        onOpenCompose={(prefill) => {
-          setComposePrefill(prefill || {})
-          setIsComposing(true)
-          setCurrentView('mail')
-        }}
+        onOpenCompose={(prefill) => openCompose(prefill || {})}
         onOpenSettings={() => setCurrentView('settings')}
         onOpenStats={() => setStatsOpen(true)}
       />

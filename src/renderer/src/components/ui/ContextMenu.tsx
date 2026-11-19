@@ -219,7 +219,7 @@ function MenuList({
             {item.icon && (
               <span className="context-menu-icon flex items-center justify-center w-4 h-4 shrink-0 leading-none">
                 {typeof item.icon === 'string' ? (
-                  <span className="material-symbols-outlined text-[16px] select-none leading-none">
+                  <span className="material-symbols-outlined !text-[16px]">
                     {item.icon}
                   </span>
                 ) : (
@@ -230,7 +230,7 @@ function MenuList({
             <span className="flex-1 text-left truncate leading-none">{item.label}</span>
             {item.submenu && (
               <svg
-                className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-transform ml-1"
+                className="w-3.5 h-3.5 text-ink-3 ml-1"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

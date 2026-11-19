@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useMailStore } from '../state/mail-store'
 import { useAccountsStore } from '../state/accounts-store'
 import { useTranslation } from '../i18n'
+import { Button, IconButton } from './ui/Button'
 
 interface ContactDossierProps {
   onClose?: () => void
@@ -13,21 +14,23 @@ interface ContactDossierProps {
 const MIN_DOSSIER_WIDTH = 280
 const MAX_DOSSIER_WIDTH = 640
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
+/** Side panel about the sender of the open message: facts, other mail, a persisted private note. */
 export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }: ContactDossierProps): JSX.Element | null {
   const { t, formatDate } = useTranslation()
-  const { selectedMessageDetail, messages, selectMessage, selectedMessageAttachments } = useMailStore()
+  const { selectedMessageDetail, messages, selectMessage } = useMailStore()
   const accounts = useAccountsStore((s) => s.accounts)
-  const [activeTab, setActiveTab] = useState<'history' | 'files'>('history')
   const [resizing, setResizing] = useState(false)
   const resizeStartRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const [copiedEmail, setCopiedEmail] = useState(false)
+  const [note, setNote] = useState('')
+  const [savedNote, setSavedNote] = useState('')
+  const [noteState, setNoteState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
-  // Panel nie może zająć więcej niż zostawiając rozsądne minimum na sidebar+listę+czytnik.
+  const senderEmail = selectedMessageDetail?.fromAddr ?? ''
+  // Settings keys are capped at 100 chars by the main process.
+  const noteKey = `contact_note:${senderEmail.toLowerCase()}`.slice(0, 100)
+
+  // Keep list + reader usable: the panel never takes more than window − 480px.
   const getDynamicMaxWidth = useCallback(() => Math.max(MIN_DOSSIER_WIDTH, Math.min(MAX_DOSSIER_WIDTH, window.innerWidth - 480)), [])
 
   const handleResizeStart = useCallback(
@@ -41,36 +44,26 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
 
   useEffect(() => {
     if (!resizing) return
-
     const handleMouseMove = (e: MouseEvent): void => {
       const start = resizeStartRef.current
       if (!start) return
-      // Panel jest po prawej stronie — przeciąganie w lewo (ujemne dx) zwiększa szerokość.
-      const dx = start.startX - e.clientX
-      const next = Math.min(getDynamicMaxWidth(), Math.max(MIN_DOSSIER_WIDTH, start.startWidth + dx))
-      onWidthChange(next)
+      onWidthChange(Math.min(getDynamicMaxWidth(), Math.max(MIN_DOSSIER_WIDTH, start.startWidth + start.startX - e.clientX)))
     }
     const handleMouseUp = (): void => {
       setResizing(false)
       resizeStartRef.current = null
     }
-
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
     const prevCursor = document.body.style.cursor
-    const prevUserSelect = document.body.style.userSelect
     document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
       document.body.style.cursor = prevCursor
-      document.body.style.userSelect = prevUserSelect
     }
   }, [resizing, onWidthChange, getDynamicMaxWidth])
 
-  // Jeśli okno się skurczy (np. zmiana rozmiaru okna aplikacji), przytnij wcześniej
-  // zapisaną szerokość panelu tak, żeby lista i czytnik zawsze miały minimum miejsca.
   useEffect(() => {
     const handleResize = (): void => {
       const max = getDynamicMaxWidth()
@@ -79,393 +72,182 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [width, onWidthChange, getDynamicMaxWidth])
-  const [copiedEmail, setCopiedEmail] = useState(false)
-  const [note, setNote] = useState('')
-  const [editingNote, setEditingNote] = useState(false)
-  const [noteDraft, setNoteDraft] = useState(note)
 
-  if (!selectedMessageDetail) {
-    return null
-  }
+  useEffect(() => {
+    if (!senderEmail) return
+    let cancelled = false
+    setNoteState('idle')
+    window.mailapp.settings
+      .get(noteKey)
+      .then((v) => {
+        if (cancelled) return
+        setNote(v ?? '')
+        setSavedNote(v ?? '')
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [noteKey, senderEmail])
 
-  const senderName = selectedMessageDetail.fromName || selectedMessageDetail.fromAddr.split('@')[0]
-  const senderEmail = selectedMessageDetail.fromAddr
-  const senderDomain = senderEmail.includes('@') ? senderEmail.split('@')[1] : 'poczta.pl'
+  if (!selectedMessageDetail) return null
 
-  // Find other messages from this sender in the store
-  const relatedMessages = messages.filter(
-    (m) =>
-      m.id !== selectedMessageDetail.id &&
-      (m.fromAddr.toLowerCase() === senderEmail.toLowerCase() ||
-        (m.fromName && m.fromName.toLowerCase() === senderName.toLowerCase()))
-  )
-
-  const threadDates = [selectedMessageDetail, ...relatedMessages]
-    .map((m) => m.dateReceived)
-    .filter((d): d is string => Boolean(d))
-    .map((d) => new Date(d).getTime())
-  const lastContact = threadDates.length > 0 ? new Date(Math.max(...threadDates)) : null
-  const firstContact = threadDates.length > 0 ? new Date(Math.min(...threadDates)) : null
-
-  const handleCopyEmail = (): void => {
-    navigator.clipboard.writeText(senderEmail)
-    setCopiedEmail(true)
-    setTimeout(() => setCopiedEmail(false), 2000)
-  }
-
+  const senderName = selectedMessageDetail.fromName || senderEmail.split('@')[0]
+  const senderDomain = senderEmail.includes('@') ? senderEmail.split('@')[1] : ''
+  const related = messages.filter((m) => m.id !== selectedMessageDetail.id && m.fromAddr.toLowerCase() === senderEmail.toLowerCase())
+  const dates = [selectedMessageDetail, ...related].map((m) => (m.dateReceived ? new Date(m.dateReceived).getTime() : NaN)).filter((n) => !isNaN(n))
+  const lastContact = dates.length ? new Date(Math.max(...dates)) : null
+  const firstContact = dates.length ? new Date(Math.min(...dates)) : null
+  const account = accounts.find((a) => a.id === selectedMessageDetail.accountId)
   const initials = senderName
-    ? senderName
-        .split(' ')
-        .map((p) => p[0])
-        .slice(0, 2)
-        .join('')
-        .toUpperCase()
-    : 'KO'
+    .split(/\s+/)
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+
+  const saveNote = async (): Promise<void> => {
+    setNoteState('saving')
+    try {
+      await window.mailapp.settings.set(noteKey, note.trim())
+      setSavedNote(note.trim())
+      setNoteState('saved')
+    } catch {
+      setNoteState('error')
+    }
+  }
 
   return (
     <aside
       aria-label={t('contactDossier.title')}
       style={{ width, minWidth: MIN_DOSSIER_WIDTH, maxWidth: MAX_DOSSIER_WIDTH }}
-      className="relative flex-shrink-0 bg-white dark:bg-[#121826] border-l border-slate-200 dark:border-white/[0.06] shadow-[-2px_0_12px_rgba(0,0,0,0.03)] flex flex-col z-20 overflow-y-auto max-h-[calc(100vh-3.5rem)] select-none text-slate-800 dark:text-slate-100"
+      className="relative flex-shrink-0 h-full overflow-y-auto border-l border-line bg-panel print:hidden"
     >
-      {/* Uchwyt do zmiany szerokości panelu (przeciągnij w poziomie) */}
       <div
         onMouseDown={handleResizeStart}
         role="separator"
         aria-orientation="vertical"
         aria-label={t('contactDossier.resize_label')}
         title={t('contactDossier.resize_hint')}
-        className={`absolute left-0 top-0 bottom-0 w-1.5 -ml-0.5 cursor-col-resize z-30 group ${
-          resizing ? 'bg-primary/40' : 'hover:bg-primary/30'
-        }`}
-      >
-        <div className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-transparent group-hover:bg-primary/50" />
+        className={`absolute left-0 inset-y-0 w-1 -ml-px cursor-col-resize z-10 ${resizing ? 'bg-accent' : 'hover:bg-line-strong'}`}
+      />
+
+      <div className="h-11 flex items-center justify-between pl-5 pr-2 border-b border-line">
+        <h2 className="eyebrow">{t('contactDossier.title')}</h2>
+        {onClose && <IconButton icon="close" size="sm" label={t('contactDossier.close')} onClick={onClose} />}
       </div>
 
-      {/* Dossier Header & Profile Overview */}
-      <div className="p-5 bg-gradient-to-b from-slate-100 dark:from-[#182234] to-white dark:to-[#121826] flex flex-col items-center text-center relative border-b border-slate-200/60 dark:border-white/[0.06]">
-        {/* Top Right Action Buttons */}
-        <div className="absolute top-3 right-3 flex items-center gap-1">
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-              title={t('contactDossier.close')}
-            >
-              <span className="material-symbols-outlined text-[18px]">close</span>
-            </button>
-          )}
+      <div className="px-5 pt-5 pb-4 border-b border-line">
+        <div className="flex items-center gap-3">
+          <span className="w-11 h-11 rounded-full bg-sunken text-ink-2 font-semibold flex items-center justify-center flex-shrink-0" aria-hidden="true">
+            {initials}
+          </span>
+          <div className="min-w-0">
+            <p className="font-serif text-lg font-medium text-ink truncate">{senderName}</p>
+            {senderDomain && (
+              <button
+                type="button"
+                onClick={() => window.mailapp.shell.openExternal(`https://${senderDomain}`)}
+                title={t('contactDossier.open_domain_tooltip', { domain: senderDomain })}
+                className="text-xs text-ink-3 hover:text-accent-ink hover:underline"
+              >
+                {senderDomain}
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Avatar with Live Status */}
-        <div className="relative mt-2 mb-2">
-          <div className="w-18 h-18 rounded-full bg-gradient-to-tr from-primary to-indigo-500 text-white font-bold text-xl flex items-center justify-center shadow-md ring-4 ring-white dark:ring-[#121826]">
-            {initials}
-          </div>
-          <span
-            className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-[#121826]"
-            title={t('contactDossier.available')}
+        <div className="mt-4 flex items-center gap-1 h-8 pl-2.5 pr-1 rounded bg-sunken">
+          <span className="flex-1 truncate text-xs text-ink selectable">{senderEmail}</span>
+          <IconButton
+            size="xs"
+            icon={copiedEmail ? 'check' : 'content_copy'}
+            label={copiedEmail ? t('contactDossier.copied') : t('contactDossier.copy_email')}
+            onClick={() => {
+              navigator.clipboard.writeText(senderEmail)
+              setCopiedEmail(true)
+              setTimeout(() => setCopiedEmail(false), 1500)
+            }}
           />
         </div>
 
-        <h2 className="font-headline text-base font-bold text-slate-900 dark:text-white tracking-tight">
-          {senderName}
-        </h2>
-        <button
-          type="button"
-          onClick={() => window.mailapp.shell.openExternal(`https://${senderDomain}`)}
-          title={t('contactDossier.open_domain_tooltip', { domain: senderDomain })}
-          className="font-mono text-xs text-primary dark:text-indigo-400 font-semibold mt-0.5 hover:underline cursor-pointer"
-        >
-          {senderDomain}
-        </button>
-
-        <div className="flex items-center gap-1.5 mt-1 text-xs text-slate-500 dark:text-slate-400">
-          <span className="material-symbols-outlined text-[14px] text-indigo-500">domain</span>
-          <button
-            type="button"
-            onClick={() => window.mailapp.shell.openExternal(`https://${senderDomain}`)}
-            title={t('contactDossier.open_domain_tooltip', { domain: senderDomain })}
-            className="hover:underline cursor-pointer"
-          >
-            {senderDomain}
-          </button>
-          <span>•</span>
-          <span className="text-emerald-600 dark:text-emerald-400 font-medium">{t('contactDossier.active')}</span>
-        </div>
-
-        {/* Primary Quick Actions Row */}
-        <div className="grid grid-cols-4 gap-2 w-full mt-4">
-          <button
-            type="button"
-            onClick={() => onOpenCompose?.({ to: senderEmail })}
-            className="flex flex-col items-center justify-center p-2 rounded-xl bg-primary text-white hover:bg-primary-container transition-all shadow-sm group"
-            title={t('contactDossier.action_write_tooltip')}
-          >
-            <span className="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">
-              mail
-            </span>
-            <span className="text-[10px] mt-1 font-medium">{t('contactDossier.action_write')}</span>
-          </button>
-
-          <a
-            href={`https://meet.google.com/new`}
-            target="_blank"
-            rel="noreferrer"
-            className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-[#1a2333] text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#222e42] transition-all group"
-            title={t('contactDossier.action_meet_tooltip')}
-          >
-            <span className="material-symbols-outlined text-[18px] text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform">
-              video_call
-            </span>
-            <span className="text-[10px] mt-1 font-medium">{t('contactDossier.action_meet')}</span>
-          </a>
-
-          <button
-            type="button"
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <Button size="sm" icon="edit" onClick={() => onOpenCompose?.({ to: senderEmail })} title={t('contactDossier.action_write_tooltip')}>
+            {t('contactDossier.action_write')}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            icon="event"
             onClick={() => onOpenCompose?.({ to: senderEmail, subject: t('contactDossier.action_meeting_subject') })}
-            className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-[#1a2333] text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#222e42] transition-all group"
             title={t('contactDossier.action_meeting_tooltip')}
           >
-            <span className="material-symbols-outlined text-[18px] text-primary dark:text-indigo-400 group-hover:scale-110 transition-transform">
-              calendar_today
-            </span>
-            <span className="text-[10px] mt-1 font-medium">{t('contactDossier.action_meeting')}</span>
-          </button>
-
-          <a
-            href={`tel:+48`}
-            className="flex flex-col items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-[#1a2333] text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#222e42] transition-all group"
-            title={t('contactDossier.action_call_tooltip')}
-          >
-            <span className="material-symbols-outlined text-[18px] text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-              call
-            </span>
-            <span className="text-[10px] mt-1 font-medium">{t('contactDossier.action_call')}</span>
-          </a>
+            {t('contactDossier.action_meeting')}
+          </Button>
         </div>
       </div>
 
-      {/* CRM Metrics & Engagement Strip */}
-      <div className="p-3 bg-slate-50 dark:bg-[#162030] mx-4 rounded-xl mt-3 grid grid-cols-2 gap-2 border border-slate-200/60 dark:border-white/[0.04]">
-        <div className="bg-white dark:bg-[#121826] p-2.5 rounded-lg flex flex-col border border-slate-100 dark:border-white/[0.04]">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
-            {t('contactDossier.metric_threads')}
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="font-headline text-base font-bold text-slate-900 dark:text-white">
-              {relatedMessages.length + 1}
-            </span>
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-              {t('contactDossier.metric_in_inbox')}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white dark:bg-[#121826] p-2.5 rounded-lg flex flex-col border border-slate-100 dark:border-white/[0.04]">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
-            {t('contactDossier.metric_last_contact')}
-          </span>
-          <div className="flex items-baseline gap-1 mt-0.5">
-            <span className="font-headline text-base font-bold text-primary dark:text-indigo-400">
-              {lastContact ? formatDate(lastContact, { day: 'numeric', month: 'short' }) : '—'}
-            </span>
-          </div>
-        </div>
-
-        {firstContact && relatedMessages.length > 0 && (
-          <div className="bg-white dark:bg-[#121826] p-2.5 rounded-lg flex flex-col col-span-2 border border-slate-100 dark:border-white/[0.04]">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
-              {t('contactDossier.metric_first_contact')}
-            </span>
-            <span className="font-headline text-base font-bold text-slate-900 dark:text-white mt-0.5">
-              {formatDate(firstContact, { day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
-          </div>
+      <dl className="px-5 py-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs border-b border-line">
+        <dt className="text-ink-3">{t('contactDossier.metric_threads')}</dt>
+        <dd className="text-ink tabular-nums text-right">{related.length + 1}</dd>
+        <dt className="text-ink-3">{t('contactDossier.metric_last_contact')}</dt>
+        <dd className="text-ink text-right">{lastContact ? formatDate(lastContact, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</dd>
+        {firstContact && related.length > 0 && (
+          <>
+            <dt className="text-ink-3">{t('contactDossier.metric_first_contact')}</dt>
+            <dd className="text-ink text-right">{formatDate(firstContact, { day: 'numeric', month: 'short', year: 'numeric' })}</dd>
+          </>
         )}
-      </div>
+        <dt className="text-ink-3">{t('contactDossier.account_label')}</dt>
+        <dd className="text-ink text-right truncate">{account?.displayName || account?.email || '—'}</dd>
+      </dl>
 
-      {/* Telecommunication & Security Specifications */}
-      <div className="p-4 flex flex-col gap-2">
-        <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
-          {t('contactDossier.sec_title')}
-        </span>
-
-        <div className="space-y-2 font-body text-xs">
-          {/* Email Field */}
-          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-[#1a2333] transition-colors group">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-slate-400 text-[18px]">mail</span>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">{t('contactDossier.email')}</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200 truncate">{senderEmail}</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleCopyEmail}
-              className="p-1 text-slate-400 hover:text-primary transition-colors"
-              title={copiedEmail ? t('contactDossier.copied') : t('contactDossier.copy_email')}
-            >
-              <span className="material-symbols-outlined text-[16px]">
-                {copiedEmail ? 'check' : 'content_copy'}
-              </span>
-            </button>
-          </div>
-
-          {/* Konto, do którego przypisany jest wątek */}
-          <div className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-[#1a2333] transition-colors">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="material-symbols-outlined text-slate-400 text-[18px]">inbox</span>
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] text-slate-400 dark:text-slate-500">{t('contactDossier.account_label')}</span>
-                <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
-                  {accounts.find((a) => a.id === selectedMessageDetail.accountId)?.displayName ||
-                    accounts.find((a) => a.id === selectedMessageDetail.accountId)?.email ||
-                    '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CRM Tabbed Section: Historia & Pliki */}
-      <div className="px-4 flex flex-col flex-1">
-        <div className="flex border-b border-slate-200 dark:border-white/[0.06] gap-4 mb-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('history')}
-            className={`pb-2 text-xs font-semibold border-b-2 transition-colors ${
-              activeTab === 'history'
-                ? 'text-primary border-primary'
-                : 'text-slate-400 dark:text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            {t('contactDossier.tab_threads', { count: relatedMessages.length })}
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('files')}
-            className={`pb-2 text-xs font-semibold border-b-2 transition-colors ${
-              activeTab === 'files'
-                ? 'text-primary border-primary'
-                : 'text-slate-400 dark:text-slate-500 border-transparent hover:text-slate-700 dark:hover:text-slate-300'
-            }`}
-          >
-            {t('contactDossier.tab_attachments', { count: selectedMessageAttachments.filter((a) => !a.isInline).length })}
-          </button>
-        </div>
-
-        {/* Thread History List */}
-        {activeTab === 'history' ? (
-          <div className="space-y-1.5 mb-4">
-            {relatedMessages.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500 py-3 text-center">
-                {t('contactDossier.no_history')}
-              </p>
-            ) : (
-              relatedMessages.map((m) => (
-                <div
-                  key={m.id}
-                  onClick={() => selectMessage(m.id)}
-                  className="p-2 rounded-xl bg-slate-50 dark:bg-[#1a2333] hover:bg-slate-100 dark:hover:bg-[#222e42] transition-all cursor-pointer border border-slate-100 dark:border-white/[0.04]"
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
-                      {m.subject || t('reader.no_subject')}
-                    </span>
-                    <span className="font-mono text-[10px] text-slate-400 flex-shrink-0">
-                      {m.dateReceived ? formatDate(m.dateReceived, { day: 'numeric', month: 'short' }) : ''}
-                    </span>
-                  </div>
-                  {m.snippet && (
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                      {m.snippet}
-                    </p>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+      <section className="px-5 py-4 border-b border-line">
+        <h3 className="eyebrow mb-2">{t('contactDossier.tab_threads', { count: related.length })}</h3>
+        {related.length === 0 ? (
+          <p className="text-xs text-ink-3">{t('contactDossier.no_history')}</p>
         ) : (
-          <div className="space-y-1.5 mb-4">
-            {selectedMessageAttachments.filter((a) => !a.isInline).length > 0 ? (
-              selectedMessageAttachments
-                .filter((a) => !a.isInline)
-                .map((att) => (
-                  <div
-                    key={att.id}
-                    className="p-2 rounded-xl bg-slate-50 dark:bg-[#1a2333] flex items-center justify-between border border-slate-100 dark:border-white/[0.04]"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="material-symbols-outlined text-[18px] text-primary">description</span>
-                      <span className="text-xs text-slate-800 dark:text-slate-200 truncate font-medium">
-                        {att.filename}
-                      </span>
-                    </div>
-                    <span className="font-mono text-[10px] text-slate-400 flex-shrink-0">
-                      {formatBytes(att.sizeBytes)}
-                    </span>
-                  </div>
-                ))
-            ) : selectedMessageDetail.hasAttachments ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500 py-3 text-center">
-                {t('contactDossier.attachments_loading')}
-              </p>
-            ) : (
-              <p className="text-xs text-slate-400 dark:text-slate-500 py-3 text-center">
-                {t('contactDossier.attachments_empty')}
-              </p>
-            )}
-          </div>
+          <ul className="-mx-2">
+            {related.map((m) => (
+              <li key={m.id}>
+                <button type="button" onClick={() => selectMessage(m.id)} className="w-full text-left px-2 py-1.5 rounded hover:bg-hover">
+                  <span className="flex items-baseline gap-2">
+                    <span className="flex-1 truncate text-xs font-medium text-ink">{m.subject || t('reader.no_subject')}</span>
+                    <span className="text-2xs text-ink-3 tabular-nums">{m.dateReceived ? formatDate(m.dateReceived, { day: 'numeric', month: 'short' }) : ''}</span>
+                  </span>
+                  {m.snippet && <span className="block truncate text-2xs text-ink-3 mt-0.5">{m.snippet}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
         )}
+      </section>
 
-        {/* Private CRM Notes Section */}
-        <div className="mt-2 mb-4 pt-3 border-t border-slate-200 dark:border-white/[0.06] flex flex-col gap-1.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[15px]">sticky_note_2</span>
-              <span>{t('contactDossier.notes_crm')}</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                if (editingNote) {
-                  setNote(noteDraft)
-                  setEditingNote(false)
-                } else {
-                  setNoteDraft(note)
-                  setEditingNote(true)
-                }
-              }}
-              className="text-xs text-primary hover:underline font-semibold"
-            >
-              {editingNote ? t('contactDossier.notes_save') : t('contactDossier.notes_edit_btn')}
-            </button>
-          </div>
-
-          {editingNote ? (
-            <textarea
-              className="w-full p-2 text-xs rounded-xl bg-white dark:bg-[#162030] border border-primary/50 text-slate-800 dark:text-slate-100 focus:outline-none resize-none h-20"
-              placeholder={t('contactDossier.notes_placeholder_input')}
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-            />
-          ) : note ? (
-            <div className="p-3 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 text-slate-800 dark:text-slate-200 flex flex-col gap-1 shadow-xs">
-              <p className="text-xs leading-relaxed text-amber-950 dark:text-amber-200">„{note}”</p>
-              <div className="flex items-center justify-between text-[10px] text-amber-800/80 dark:text-amber-400/70 pt-1 mt-1 border-t border-amber-200/50 dark:border-amber-900/30">
-                <span>{t('contactDossier.notes_session_notice')}</span>
-                <span className="material-symbols-outlined text-[14px]">lock</span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-xs text-slate-400 dark:text-slate-500 py-2 text-center">{t('contactDossier.notes_empty_hint')}</p>
-          )}
+      <section className="px-5 py-4">
+        <label htmlFor="contact-note" className="eyebrow block mb-2">
+          {t('contactDossier.notes_title')}
+        </label>
+        <textarea
+          id="contact-note"
+          className="textarea !text-xs"
+          maxLength={2000}
+          rows={4}
+          placeholder={t('contactDossier.notes_placeholder_input')}
+          value={note}
+          onChange={(e) => {
+            setNote(e.target.value)
+            setNoteState('idle')
+          }}
+        />
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-2xs text-ink-3" aria-live="polite">
+            {noteState === 'saved' ? t('contactDossier.notes_saved') : noteState === 'error' ? t('common.error') : t('contactDossier.notes_local_hint')}
+          </span>
+          <Button size="xs" variant="secondary" loading={noteState === 'saving'} disabled={note.trim() === savedNote} onClick={saveNote}>
+            {t('contactDossier.notes_save')}
+          </Button>
         </div>
-      </div>
+      </section>
     </aside>
   )
 }

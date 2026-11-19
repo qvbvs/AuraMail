@@ -1,35 +1,17 @@
 import React from 'react'
 
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: 'text' | 'title' | 'avatar' | 'rect'
   width?: string | number
   height?: string | number
-  borderRadius?: string | number
+  round?: boolean
 }
 
-export function Skeleton({
-  variant = 'text',
-  width,
-  height,
-  borderRadius,
-  className = '',
-  style,
-  ...props
-}: SkeletonProps): JSX.Element {
-  let defaultClass = 'skeleton'
-  if (variant === 'text') defaultClass += ' skeleton-text'
-  if (variant === 'title') defaultClass += ' skeleton-title'
-  if (variant === 'avatar') defaultClass += ' skeleton-avatar'
-
+export function Skeleton({ width = '100%', height = 12, round = false, className = '', style, ...props }: SkeletonProps): JSX.Element {
   return (
     <div
-      className={`${defaultClass} ${className}`}
-      style={{
-        width,
-        height,
-        borderRadius,
-        ...style
-      }}
+      aria-hidden="true"
+      className={`skeleton ${round ? '!rounded-full' : ''} ${className}`}
+      style={{ width, height, ...style }}
       {...props}
     />
   )

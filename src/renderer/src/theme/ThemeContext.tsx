@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode } from 'react'
-import { FluentProvider, webLightTheme, webDarkTheme, type Theme } from '@fluentui/react-components'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
@@ -61,10 +60,6 @@ export function ThemeProvider({ children }: { children: ReactNode }): JSX.Elemen
     }
   }, [theme, resolvedTheme])
 
-  const fluentTheme: Theme = useMemo(() => {
-    return resolvedTheme === 'dark' ? webDarkTheme : webLightTheme
-  }, [resolvedTheme])
-
   const setTheme = (mode: ThemeMode): void => {
     setThemeState(mode)
   }
@@ -88,9 +83,7 @@ export function ThemeProvider({ children }: { children: ReactNode }): JSX.Elemen
 
   return (
     <ThemeContext.Provider value={value}>
-      <FluentProvider theme={fluentTheme} style={{ height: '100%', width: '100%' }}>
-        {children}
-      </FluentProvider>
+      {children}
     </ThemeContext.Provider>
   )
 }

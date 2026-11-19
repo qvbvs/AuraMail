@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useTranslation } from '../../i18n'
+import { IconButton } from './Button'
 
 export interface ModalProps {
   open: boolean
@@ -122,15 +123,7 @@ export function Modal({
             {title && <h2 className="modal-title">{title}</h2>}
             <div className="flex items-center gap-2 flex-shrink-0">
               {headerExtra}
-              <button
-                type="button"
-                onClick={requestClose}
-                className="modal-close-btn"
-                aria-label={t('common.close')}
-                title={`${t('common.close')} (Esc)`}
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
+              <IconButton icon="close" label={t('common.close')} shortcut="Esc" size="sm" onClick={requestClose} />
             </div>
           </div>
         )}

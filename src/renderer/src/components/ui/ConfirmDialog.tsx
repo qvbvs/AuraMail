@@ -53,7 +53,7 @@ export function ConfirmDialog({
       size="sm"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             {effectiveCancelLabel}
           </Button>
           <Button variant={danger ? 'danger' : 'primary'} onClick={handleConfirm} loading={busy}>
@@ -62,7 +62,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      {description && <p className="text-body-sm text-on-surface-variant dark:text-text-muted leading-relaxed">{description}</p>}
+      {description && <p className="text-sm text-ink-2 leading-relaxed">{description}</p>}
     </Modal>
   )
 }
