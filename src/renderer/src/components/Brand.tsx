@@ -1,13 +1,11 @@
 import React from 'react'
+import logo from '../assets/logo.png'
 
-/** Wordmark: the raised mailbox flag — the one place the brand yellow appears as a shape. */
+/** App icon + wordmark, as on the window and taskbar icon. */
 export function Brand(): JSX.Element {
   return (
-    <span className="flex items-center gap-1.5 select-none">
-      <svg width="16" height="18" viewBox="0 0 16 18" aria-hidden="true">
-        <rect x="2" y="1" width="2.2" height="16" rx="1.1" fill="var(--ink)" />
-        <path d="M4.2 2h9.3l-2.6 3.4 2.6 3.4H4.2z" fill="var(--flag)" />
-      </svg>
+    <span className="flex items-center gap-2 select-none">
+      <img src={logo} alt="" width={22} height={22} className="w-[22px] h-[22px]" draggable={false} />
       <span className="text-[16px] font-extrabold tracking-[-0.03em] text-ink">AuraMail</span>
     </span>
   )
