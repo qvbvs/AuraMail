@@ -74,10 +74,10 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
       onDoubleClick={(e) => {
         if (!(e.target as HTMLElement).closest('button, input, a, .app-no-drag')) window.mailapp?.window?.maximize?.()
       }}
-      className={`app-drag-region h-[var(--titlebar-h)] flex items-center gap-3 pl-2 bg-canvas transition-opacity ${focused ? '' : 'opacity-80'}`}
+      className={`app-drag-region h-[var(--titlebar-h)] grid grid-cols-[minmax(0,1fr)_minmax(0,720px)_minmax(0,1fr)] max-sm:grid-cols-[auto_1fr_auto] items-center gap-3 pl-2 bg-canvas transition-opacity ${focused ? '' : 'opacity-80'}`}
       data-testid="app-title-bar"
     >
-      <div className="flex items-center gap-1 w-[calc(var(--sidebar-w)-8px)] max-lg:w-auto flex-shrink-0">
+      <div className="flex items-center gap-1 min-w-0">
         <IconButton
           className="app-no-drag"
           icon={sidebarCollapsed ? 'left_panel_open' : 'left_panel_close'}
@@ -89,14 +89,14 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
         </button>
       </div>
 
-      <div className="app-no-drag flex-1 min-w-0 max-w-[560px] max-sm:hidden">
-        <label className="relative flex items-center h-[30px] rounded bg-sunken focus-within:bg-raised focus-within:shadow-[0_0_0_1px_var(--accent),0_0_0_4px_var(--accent-soft)] transition-shadow">
-          <Icon name="search" className="absolute left-2.5 text-ink-3 pointer-events-none" />
+      <div className="app-no-drag min-w-0 max-sm:invisible">
+        <label className="relative flex items-center h-[34px] rounded-lg border border-line bg-panel hover:border-line-strong focus-within:border-line-strong focus-within:shadow-[0_0_0_3px_var(--hover)] transition-shadow">
+          <Icon name="search" className="absolute left-3 text-ink-3 pointer-events-none" />
           <span className="sr-only">{t('common.search')}</span>
           <input
             ref={searchInputRef}
             type="search"
-            className="w-full h-full bg-transparent pl-8 pr-16 text-sm text-ink placeholder:text-ink-3 outline-none [&::-webkit-search-cancel-button]:hidden"
+            className="w-full h-full bg-transparent pl-9 pr-20 text-md text-ink placeholder:text-ink-3 outline-none [&::-webkit-search-cancel-button]:hidden"
             placeholder={t('topbar.search_placeholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -120,9 +120,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
         </label>
       </div>
 
-      <div className="flex-1" />
-
-      <div className="flex items-center h-full app-no-drag">
+      <div className="flex items-center justify-end h-full app-no-drag">
         <IconButton icon="search" label={t('common.search')} shortcut="Ctrl K" onClick={onOpenCommandPalette} className="sm:hidden" />
         <IconButton
           icon={resolvedTheme === 'dark' ? 'light_mode' : 'dark_mode'}

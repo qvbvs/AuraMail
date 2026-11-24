@@ -40,6 +40,7 @@
     display: none !important;
   }
   .pane-sheet {
+    margin: 0;
     border: 0;
   }
 }
@@ -63,10 +64,11 @@
   flex: 1;
   min-width: 0;
   display: flex;
+  margin: 0 8px 8px 0;
   background: var(--panel);
-  border-left: 1px solid var(--line);
-  border-top: 1px solid var(--line);
-  border-top-left-radius: var(--r-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-4);
+  overflow: hidden;
 }
 
 .pane-list {
@@ -114,8 +116,7 @@
     visibility: hidden;
   }
   .pane-sheet {
-    border-left: 0;
-    border-top-left-radius: 0;
+    margin: 0 6px 6px;
   }
 }
 
@@ -226,15 +227,15 @@
 .kbd {
   display: inline-flex;
   align-items: center;
-  height: 18px;
-  min-width: 18px;
-  padding: 0 4px;
-  font: 500 10px/1 var(--font-mono);
-  color: var(--ink-3);
+  justify-content: center;
+  height: 20px;
+  min-width: 20px;
+  padding: 0 5px;
+  font: 500 11px/1 var(--font-mono);
+  color: var(--ink-2);
   border: 1px solid var(--line-strong);
-  border-bottom-width: 2px;
   border-radius: var(--r-1);
-  background: var(--raised);
+  background: transparent;
 }
 
 /* ==========================================================================
@@ -351,15 +352,15 @@
 /* Segmented control (filters, view switches). */
 .segmented {
   display: inline-flex;
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
   background: var(--sunken);
-  border-radius: var(--r-2);
+  border-radius: var(--r-3);
 }
 .segmented > button {
-  height: 22px;
-  padding: 0 9px;
-  font: 500 var(--text-xs) / 1 var(--font-sans);
+  height: 28px;
+  padding: 0 12px;
+  font: 500 var(--text-sm) / 1 var(--font-sans);
   color: var(--ink-2);
   border-radius: var(--r-1);
   white-space: nowrap;
@@ -374,12 +375,17 @@
   color: var(--ink);
   box-shadow: var(--shadow-1), 0 0 0 1px var(--line);
 }
+.dark .segmented > button[aria-pressed='true'],
+.dark .segmented > button[aria-selected='true'] {
+  background: var(--selected);
+  box-shadow: none;
+}
 
 /* Small section heading used in sidebars and panels. */
 .eyebrow {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--ink-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--ink-3);
 }
 
 /* Label / status chip — square-ish, quiet. */

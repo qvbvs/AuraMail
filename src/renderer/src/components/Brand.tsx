@@ -5,8 +5,8 @@ import logo from '../assets/logo.png'
 export function Brand(): JSX.Element {
   return (
     <span className="flex items-center gap-2 select-none">
-      <img src={logo} alt="" width={22} height={22} className="w-[22px] h-[22px]" draggable={false} />
-      <span className="text-[16px] font-extrabold tracking-[-0.03em] text-ink">AuraMail</span>
+      <img src={logo} alt="" width={24} height={24} className="w-6 h-6" draggable={false} />
+      <span className="text-[15px] font-semibold tracking-[-0.01em] text-ink">AuraMail</span>
     </span>
   )
 }

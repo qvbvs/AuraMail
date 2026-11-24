@@ -1,30 +1,26 @@
 /* ==========================================================================
-   AuraMail design tokens — "mailbox"
-   Cool fog surfaces, blue ink for interaction, and postal yellow used in one
-   role only: the mailbox flag (compose, unread, today, brand mark).
+   AuraMail design tokens — neutral graphite
+   Monochrome surfaces and controls; the only hue is amber for unread mail.
    Every colour used by the UI comes from here; components never hard-code hex.
    ========================================================================== */
 
-@import '@fontsource-variable/schibsted-grotesk/wght.css';
-@import '@fontsource-variable/schibsted-grotesk/wght-italic.css';
+@import '@fontsource-variable/geist/wght.css';
 @import 'material-symbols/outlined.css';
 
 :root {
-  --font-sans: 'Schibsted Grotesk Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Geist Variable', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Cascadia Mono', Consolas, ui-monospace, monospace;
 
-  /* Type scale (px) — UI is 13px-based, reading text 15px */
   --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;
   --text-md: 14px;
   --text-lg: 16px;
   --text-xl: 21px;
-  --text-2xl: 28px;
+  --text-2xl: 26px;
 
-  /* Radii grow with the size of the surface: controls < popovers < dialogs. */
   --r-1: 4px;
-  --r-2: 6px;
+  --r-2: 7px;
   --r-3: 10px;
   --r-4: 14px;
 
@@ -38,8 +34,7 @@
   --z-toast: 150;
   --z-tooltip: 200;
 
-  /* Shell metrics */
-  --titlebar-h: 44px;
+  --titlebar-h: 48px;
   --sidebar-w: 248px;
   --list-w: 380px;
 }
@@ -49,42 +44,43 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --canvas: #e7eaee;
-  --panel: #fafbfc;
+  --canvas: #f3f3f4;
+  --panel: #ffffff;
   --raised: #ffffff;
-  --sunken: #e1e5ea;
-  --hover: rgba(20, 30, 45, 0.05);
-  --selected: #e3e8fb;
+  --sunken: #ebebed;
+  --hover: rgba(0, 0, 0, 0.045);
+  --selected: #e9e9eb;
 
-  --line: #dde1e6;
-  --line-strong: #c3cad2;
+  --line: #e4e4e7;
+  --line-strong: #d1d1d6;
 
-  --ink: #14171a;
-  --ink-2: #4a525c;
-  --ink-3: #69727e;
+  --ink: #18181b;
+  --ink-2: #52525b;
+  --ink-3: #6e6e78;
 
-  --accent: #2442c9;
-  --accent-hover: #1b35a8;
-  --accent-soft: #e3e8fb;
-  --accent-ink: #2039b0;
+  /* Interaction is monochrome: the strongest control is ink on canvas. */
+  --accent: #18181b;
+  --accent-hover: #2e2e33;
+  --accent-soft: #e9e9eb;
+  --accent-ink: #18181b;
   --on-accent: #ffffff;
 
-  /* Mailbox flag */
-  --flag: #ffc21a;
-  --flag-hover: #f5b400;
-  --on-flag: #14171a;
+  /* Unread marker */
+  --flag: #e08a00;
+  --flag-hover: #c97c00;
+  --on-flag: #18181b;
 
-  --danger: #c0262d;
-  --danger-soft: #fbe6e6;
+  --danger: #c4282d;
+  --danger-soft: #fce8e8;
   --warn: #8a5600;
   --warn-soft: #fbf0d6;
-  --ok: #1f7a45;
-  --ok-soft: #e0f1e7;
+  --ok: #1f8a4c;
+  --ok-soft: #e2f4e9;
 
-  --scrim: rgba(16, 22, 32, 0.38);
-  --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.07);
-  --shadow-2: 0 12px 30px -10px rgba(16, 24, 40, 0.24), 0 0 0 1px var(--line);
-  --shadow-3: 0 28px 64px -18px rgba(16, 24, 40, 0.34), 0 0 0 1px var(--line);
+  --scrim: rgba(0, 0, 0, 0.35);
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 12px 30px -10px rgba(0, 0, 0, 0.22), 0 0 0 1px var(--line);
+  --shadow-3: 0 28px 64px -18px rgba(0, 0, 0, 0.32), 0 0 0 1px var(--line);
 }
 
 /* ----------------------------------------------------------------- dark -- */
@@ -92,41 +88,41 @@
 .dark {
   color-scheme: dark;
 
-  --canvas: #101317;
-  --panel: #171a1f;
-  --raised: #1f232a;
-  --sunken: #0c0e11;
-  --hover: rgba(220, 230, 245, 0.055);
-  --selected: #1e2846;
+  --canvas: #121212;
+  --panel: #171717;
+  --raised: #1e1e1e;
+  --sunken: #0d0d0d;
+  --hover: rgba(255, 255, 255, 0.05);
+  --selected: #262626;
 
-  --line: #262b32;
-  --line-strong: #363c46;
+  --line: #262626;
+  --line-strong: #363636;
 
-  --ink: #e8ebee;
-  --ink-2: #a9b0b9;
-  --ink-3: #868e99;
+  --ink: #ededed;
+  --ink-2: #a3a3a3;
+  --ink-3: #7c7c7c;
 
-  --accent: #8ea2ff;
-  --accent-hover: #a8b8ff;
-  --accent-soft: #1e2846;
-  --accent-ink: #a9b8ff;
-  --on-accent: #0d1330;
+  --accent: #ededed;
+  --accent-hover: #ffffff;
+  --accent-soft: #262626;
+  --accent-ink: #ededed;
+  --on-accent: #121212;
 
-  --flag: #ffc93d;
-  --flag-hover: #ffd566;
-  --on-flag: #14171a;
+  --flag: #f5a524;
+  --flag-hover: #ffb740;
+  --on-flag: #121212;
 
-  --danger: #ff8a8a;
-  --danger-soft: #3a1c1f;
+  --danger: #ff7a7a;
+  --danger-soft: #3a1c1c;
   --warn: #f0bc5a;
   --warn-soft: #33290f;
-  --ok: #6fd39a;
-  --ok-soft: #15301f;
+  --ok: #5fd08f;
+  --ok-soft: #142d1f;
 
-  --scrim: rgba(0, 0, 0, 0.55);
+  --scrim: rgba(0, 0, 0, 0.6);
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-2: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--line-strong);
-  --shadow-3: 0 28px 70px -16px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--line-strong);
+  --shadow-2: 0 12px 32px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--line-strong);
+  --shadow-3: 0 28px 70px -16px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--line-strong);
 }
 
 /* ---------------------------------------------------------------- base --- */

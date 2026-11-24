@@ -42,7 +42,7 @@ export const en: Record<keyof typeof pl, string> = {
 
   // Panel boczny / Sidebar
   'sidebar.compose': 'New message',
-  'sidebar.accounts': 'Mail accounts',
+  'sidebar.accounts': 'Mailboxes',
   'sidebar.add_account': 'Add new account',
   'sidebar.all_inboxes': 'All inboxes',
   'sidebar.folders': 'Folders',
@@ -144,8 +144,8 @@ export const en: Record<keyof typeof pl, string> = {
   'reader.remove_label': 'Remove label {name}',
   'reader.no_subject': '(No subject)',
   'reader.attachments': 'Attachments ({count})',
-  'reader.select_prompt': 'Select a message from the list on the left to read its contents.',
-  'reader.select_prompt_title': 'Select a message',
+  'reader.select_prompt': 'Pick a thread from the list to read it.',
+  'reader.select_prompt_title': 'No message selected',
   'reader.back_to_list': 'List',
   'reader.print': 'Print message',
   'reader.view_thread_tooltip': 'Thread view',
@@ -402,9 +402,9 @@ export const en: Record<keyof typeof pl, string> = {
   'settings.tab.accounts': 'Accounts',
   'settings.tab.filters': 'Rules',
   'settings.language.title': 'Interface language',
-  'settings.language.desc': 'Select your preferred language for the AuraMail interface.',
-  'settings.labels.title': 'Label Management',
-  'settings.labels.desc': 'Create, edit colors, and delete labels organizing your mail.',
+  'settings.language.desc': 'Applies to menus, buttons and messages.',
+  'settings.labels.title': 'Your labels',
+  'settings.labels.desc': 'Coloured tags for organising mail.',
   'settings.accounts.delete_confirm_title': 'Delete account {email}?',
   'settings.accounts.delete_confirm_desc': 'All locally cached messages for this account will be permanently deleted from the local database.',
   'settings.accounts.never_synced': 'Not synced yet.',
@@ -424,7 +424,7 @@ export const en: Record<keyof typeof pl, string> = {
   'settings.filter_move_to_folder': 'Move to folder',
   'settings.loading_ellipsis': 'Loading...',
   'settings.no_rules_for_account': 'No rules for this account.',
-  'settings.desktop_notifications_title': 'Desktop notifications',
+  'settings.desktop_notifications_title': 'Notifications',
   'settings.new_mail_label': 'New mail',
   'settings.default_app_language': 'Default app language',
   'settings.startup.title': 'Startup with system',
@@ -527,10 +527,10 @@ export const en: Record<keyof typeof pl, string> = {
   'onboarding.account.connected_as': 'Configured account: {email}',
   'onboarding.sync.title': 'Sync',
   'onboarding.appearance.subtitle': 'Choose your preferred color theme and application language.',
-  'onboarding.appearance.theme': 'Color Theme',
+  'onboarding.appearance.theme': 'Theme',
   'onboarding.appearance.theme.light': 'Light',
   'onboarding.appearance.theme.dark': 'Dark',
-  'onboarding.appearance.theme.system': 'System Default',
+  'onboarding.appearance.theme.system': 'Match system',
 
   // Pusty stan / EmptyState
   'emptyState.new_message': 'New message',
@@ -561,7 +561,7 @@ export const en: Record<keyof typeof pl, string> = {
   'messageList.filter_label': 'Message filter',
   'messageList.empty.no_filter_desc': 'No messages match the selected filter.',
   'reader.quote_header': 'On {date}, {name} wrote:',
-  'reader.hint_navigate': 'Previous / next message',
+  'reader.hint_navigate': 'Previous / next',
   'reader.toolbar_aria': 'Message actions',
   'reader.archive': 'Archive',
   'reader.cc_prefix': 'Cc: {recipients}',
@@ -632,4 +632,15 @@ export const en: Record<keyof typeof pl, string> = {
   'onboarding.done.subtitle': 'The first sync starts as soon as you open the inbox.',
   'onboarding.done.hint': 'Shortcuts: C — new message, Ctrl+K — search and commands, / — search.',
   'onboarding.done.open': 'Open inbox',
+
+  // redesign
+  'sidebar.tools': 'Tools',
+
+  // redesign
+  'settings.general_desc': 'Appearance, notifications and app behaviour.',
+  'settings.appearance_title': 'Appearance',
+  'settings.theme_desc': 'Colours for the whole app.',
+  'settings.behaviour_title': 'Behaviour',
+  'settings.accounts_desc': 'Mailboxes, servers, passwords and mail rules.',
+  'settings.accounts_list_title': 'Your mailboxes',
 }

@@ -230,11 +230,11 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <header className="px-4 pt-3.5 pb-2.5 border-b border-line">
+      <header className="px-5 pt-4 pb-3 border-b border-line">
         <div className="flex items-baseline gap-2 min-w-0">
           {selectedLabel && <span className="chip-dot self-center" style={{ backgroundColor: selectedLabel.color }} />}
-          <h1 className="font-bold tracking-[-0.02em] text-xl text-ink truncate">{title}</h1>
-          <span className="text-xs text-ink-3 tabular-nums whitespace-nowrap">
+          <h1 className="font-semibold tracking-[-0.015em] text-xl text-ink truncate">{title}</h1>
+          <span className="text-md text-ink-3 tabular-nums whitespace-nowrap">
             {searchQuery ? t('messageList.results_count', { count: filteredMessages.length }) : unreadCount > 0 ? t('messageList.unread_count', { count: unreadCount }) : messages.length}
           </span>
           <span className="flex-1" />
@@ -257,7 +257,7 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
             }}
           />
         </div>
-        <div className="segmented mt-2.5 max-w-full overflow-x-auto" role="group" aria-label={t('messageList.filter_label')}>
+        <div className="segmented mt-3 w-full [&>button]:flex-1 [&>button]:px-1.5 [&>button]:whitespace-normal [&>button]:leading-tight [&>button]:h-auto [&>button]:min-h-[28px]" role="group" aria-label={t('messageList.filter_label')}>
           {FILTERS.map((f) => (
             <button key={f} type="button" aria-pressed={filterTab === f} onClick={() => setFilterTab(f)}>
               {t(`topbar.filter_${f}`)}
@@ -349,7 +349,7 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
           groups.map((g) => (
             <div key={g.key} role="group" aria-label={g.title || undefined}>
               {g.title && (
-                <div className="sticky top-0 z-[1] px-4 pt-3 pb-1 bg-panel/95 backdrop-blur-[2px] eyebrow" aria-hidden="true">
+                <div className="sticky top-0 z-[1] px-5 pt-4 pb-1.5 bg-panel eyebrow" aria-hidden="true">
                   {g.title}
                 </div>
               )}
@@ -371,29 +371,29 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
                       e.preventDefault()
                       setMenu({ x: e.clientX, y: e.clientY, items: buildContextMenuItems(m) })
                     }}
-                    className={`group relative pl-7 pr-3 py-2.5 cursor-default border-b border-line transition-colors ${
+                    className={`group relative mx-2 pl-6 pr-3 py-2.5 rounded-lg cursor-default transition-colors ${
                       selected ? 'bg-selected' : 'hover:bg-hover'
                     }`}
                   >
-                    {selected && <span className="absolute left-0 inset-y-0 w-[3px] bg-accent" aria-hidden="true" />}
-                    {!m.isRead && <span className="absolute left-[11px] top-3 w-[5px] h-[18px] rounded-full bg-flag shadow-[0_0_0_1px_color-mix(in_srgb,var(--on-flag)_18%,transparent)]" role="img" aria-label={t('messageList.props.status_unread')} />}
+                    {!m.isRead && <span className="absolute left-2.5 top-[17px] w-[7px] h-[7px] rounded-full bg-flag" role="img" aria-label={t('messageList.props.status_unread')} />}
 
-                    <div className="flex items-baseline gap-2">
-                      <span className={`flex-1 truncate text-sm ${m.isRead ? 'text-ink-2' : 'text-ink font-semibold'}`}>{sender}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`truncate text-md ${m.isRead ? 'text-ink' : 'text-ink font-semibold'}`}>{sender}</span>
+                      {m.threadCount > 1 && <span className="flex-shrink-0 px-1.5 h-[18px] leading-[18px] rounded-md bg-sunken text-2xs text-ink-2 tabular-nums">{m.threadCount}</span>}
+                      <span className="flex-1" />
                       <span className="flex items-center gap-1 text-ink-3 group-hover:invisible group-focus-within:invisible">
                         {m.hasAttachments && <Icon name="attach_file" className="!text-[14px]" />}
                         {m.isStarred && <Icon name="star" fill className="!text-[14px] text-warn" />}
-                        <time className="text-xs tabular-nums whitespace-nowrap" dateTime={m.dateReceived ?? undefined}>
+                        <time className={`text-sm tabular-nums whitespace-nowrap ${m.isRead ? '' : 'text-ink font-medium'}`} dateTime={m.dateReceived ?? undefined}>
                           {formatRelativeDate(m.dateReceived)}
                         </time>
                       </span>
                     </div>
 
-                    <p className={`truncate text-sm mt-0.5 ${m.isRead ? 'text-ink-2' : 'text-ink font-medium'}`}>
-                      {m.subject || t('messageList.no_subject')}
-                      {m.threadCount > 1 && <span className="ml-1.5 text-xs text-ink-3 font-normal tabular-nums">{m.threadCount}</span>}
+                    <p className="truncate text-md mt-0.5">
+                      <span className={m.isRead ? 'text-ink-2' : 'text-ink font-medium'}>{m.subject || t('messageList.no_subject')}</span>
+                      {m.snippet && <span className="ml-2 text-ink-3">{m.snippet}</span>}
                     </p>
-                    <p className="truncate text-xs text-ink-3 mt-0.5">{m.snippet}</p>
 
                     {((isUnifiedInbox && m.accountEmail) || (m.labels && m.labels.length > 0)) && (
                       <div className="flex items-center gap-1 mt-1.5 overflow-hidden">

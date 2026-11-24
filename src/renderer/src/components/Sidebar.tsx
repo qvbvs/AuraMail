@@ -54,15 +54,15 @@ function NavItem({ active, onClick, label, icon, count, countTone = 'quiet', tra
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
       title={title}
-      className={`group relative w-full h-[30px] flex items-center gap-2.5 pl-2.5 pr-2 rounded text-left text-sm transition-colors ${
-        active && !soft ? 'bg-raised text-ink font-medium shadow-1' : active ? 'text-ink font-medium hover:bg-hover' : 'text-ink-2 hover:bg-hover hover:text-ink'
+      className={`group relative w-full h-[34px] flex items-center gap-3 pl-2.5 pr-2.5 rounded-lg text-left text-md transition-colors ${
+        active && !soft ? 'bg-selected text-ink font-medium' : active ? 'text-ink font-medium hover:bg-hover' : 'text-ink-2 hover:bg-hover hover:text-ink'
       }`}
     >
-      {typeof icon === 'string' ? <Icon name={icon} className={active ? 'text-accent' : 'text-ink-3 group-hover:text-ink-2'} /> : icon}
+      {typeof icon === 'string' ? <Icon name={icon} className={`!text-[19px] ${active ? 'text-ink' : 'text-ink-3 group-hover:text-ink-2'}`} /> : icon}
       <span className="flex-1 truncate">{label}</span>
       {trailing}
       {count !== undefined && count > 0 && (
-        <span className={`tabular-nums text-xs ${countTone === 'strong' ? 'min-w-[20px] h-[18px] px-1.5 rounded-full bg-flag text-on-flag font-semibold text-center leading-[18px]' : 'text-ink-3'}`}>{count}</span>
+        <span className={`tabular-nums text-sm ${countTone === 'strong' ? 'text-ink font-medium' : 'text-ink-3'}`}>{count}</span>
       )}
     </button>
   )
@@ -70,8 +70,8 @@ function NavItem({ active, onClick, label, icon, count, countTone = 'quiet', tra
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }): JSX.Element {
   return (
-    <section className="mt-5 first:mt-0">
-      <div className="h-6 flex items-center justify-between pl-2.5 pr-1 mb-0.5">
+    <section className="mt-6 first:mt-1">
+      <div className="h-7 flex items-center justify-between pl-2.5 pr-1 mb-1">
         <h2 className="eyebrow">{title}</h2>
         {action}
       </div>
@@ -128,15 +128,15 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
 
   return (
     <aside className="h-full flex flex-col min-h-0" aria-label={t('sidebar.nav_aria')}>
-      <div className="px-3 pt-3 pb-2">
+      <div className="px-2 pt-1 pb-3">
         <button
           type="button"
           onClick={onOpenCompose}
-          className="w-full h-9 flex items-center gap-2 pl-3 pr-2 rounded-md bg-flag text-on-flag text-sm font-semibold hover:bg-flag-hover transition-colors shadow-1"
+          className="w-full h-10 flex items-center gap-2.5 pl-3 pr-2.5 rounded-lg bg-ink text-canvas text-md font-medium hover:opacity-90 transition-opacity"
         >
-          <Icon name="edit" />
+          <Icon name="edit" className="!text-[19px]" />
           <span className="flex-1 text-left">{t('sidebar.compose')}</span>
-          <kbd className="kbd !bg-transparent !text-on-flag/70 !border-on-flag/25">C</kbd>
+          <kbd className="kbd !bg-canvas/10 !text-canvas/70 !border-canvas/20">C</kbd>
         </button>
       </div>
 
@@ -144,7 +144,7 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
         <Section title={t('sidebar.accounts')} action={<IconButton icon="add" label={t('sidebar.add_account')} size="xs" onClick={() => setAccountDialogOpen(true)} />}>
           <NavItem
             active={inMail && isUnifiedInbox}
-            icon="all_inbox"
+            icon="stacks"
             label={t('sidebar.all_inboxes')}
             count={unifiedUnread}
             countTone="strong"
@@ -161,7 +161,11 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
                 key={acc.id}
                 active={currentView === 'mail' && !isUnifiedInbox && selectedAccountId === acc.id}
                 soft
-                icon={<span className="w-[18px] flex justify-center"><span className="w-2 h-2 rounded-sm" style={{ backgroundColor: acc.color }} /></span>}
+                icon={
+                  <span className="w-[19px] h-[19px] rounded-[5px] flex items-center justify-center text-[11px] font-semibold text-white flex-shrink-0" style={{ backgroundColor: acc.color }} aria-hidden="true">
+                    {(acc.displayName || acc.email).trim().charAt(0).toUpperCase()}
+                  </span>
+                }
                 label={acc.displayName || acc.email}
                 title={acc.email}
                 trailing={!ok ? <Icon name="error" className="!text-[15px] text-warn" /> : undefined}
@@ -246,7 +250,7 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
             <div key={lbl.id} className="group relative">
               <NavItem
                 active={currentView === 'mail' && specialView === 'none' && selectedLabelId === lbl.id}
-                icon={<span className="w-[18px] flex justify-center"><span className="chip-dot" style={{ backgroundColor: lbl.color }} /></span>}
+                icon={<span className="w-[19px] flex justify-center"><span className="w-2 h-2 rounded-full" style={{ backgroundColor: lbl.color }} /></span>}
                 label={getLocalizedLabelName(lbl, t)}
                 count={lbl.unreadCount}
                 onClick={() => {
@@ -269,26 +273,21 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
             </div>
           ))}
         </Section>
+
+        <Section title={t('sidebar.tools')}>
+          <NavItem active={currentView === 'calendar'} icon="calendar_today" label={t('sidebar.tool.calendar')} onClick={() => onNavigateView?.('calendar')} />
+          <NavItem active={currentView === 'files'} icon="attach_file" label={t('sidebar.tool.files')} onClick={() => onNavigateView?.('files')} />
+          {onOpenStats && <NavItem active={false} icon="monitoring" label={t('sidebar.tool.stats')} onClick={onOpenStats} />}
+        </Section>
       </nav>
 
-      <div className="px-2 py-2 border-t border-line flex flex-col gap-px">
-        <NavItem active={currentView === 'calendar'} icon="calendar_today" label={t('sidebar.tool.calendar')} onClick={() => onNavigateView?.('calendar')} />
-        <NavItem active={currentView === 'files'} icon="attach_file" label={t('sidebar.tool.files')} onClick={() => onNavigateView?.('files')} />
-        {onOpenStats && <NavItem active={false} icon="monitoring" label={t('sidebar.tool.stats')} onClick={onOpenStats} />}
-        <NavItem active={currentView === 'settings'} icon="settings" label={t('sidebar.tool.settings')} onClick={() => onNavigateView?.('settings')} />
-        <button
-          type="button"
-          onClick={() => syncAllAccounts()}
-          disabled={syncing}
-          title={t('sidebar.sync_now')}
-          className="mt-1 h-7 flex items-center gap-2 pl-3 pr-2 rounded text-xs text-ink-3 hover:bg-hover hover:text-ink-2 disabled:cursor-default"
-        >
-          <span className={`w-1.5 h-1.5 rounded-full ${statusDot}`} aria-hidden="true" />
-          <span className="flex-1 text-left truncate" aria-live="polite">
-            {statusLabel}
-          </span>
-          <Icon name="sync" className={`!text-[15px] ${syncing ? 'animate-spin' : ''}`} />
-        </button>
+      <div className="mx-2 mb-2 pt-2 border-t border-line flex items-center gap-1">
+        <span className="flex-1 min-w-0 flex items-center gap-2 pl-2.5 text-sm text-ink-2" aria-live="polite">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot}`} aria-hidden="true" />
+          <span className="truncate">{statusLabel}</span>
+        </span>
+        <IconButton icon="sync" label={t('sidebar.sync_now')} loading={syncing} onClick={() => syncAllAccounts()} />
+        <IconButton icon="tune" label={t('sidebar.tool.settings')} aria-pressed={currentView === 'settings'} onClick={() => onNavigateView?.('settings')} />
       </div>
 
       <AddAccountDialog open={accountDialogOpen} onClose={() => setAccountDialogOpen(false)} />

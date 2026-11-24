@@ -7,7 +7,7 @@ import { useTheme, type ThemeMode } from '../theme/ThemeContext'
 import { LabelDialog } from './LabelDialog'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Button, Icon, IconButton } from './ui/Button'
-import { Field, SwitchRow } from './ui/Field'
+import { Field } from './ui/Field'
 import { playNotificationSound } from '../utils/sound'
 import type { AccountSecurity, AccountSummary, BandwidthPoint, FolderSummary, MailRule, MailRuleConditionField, TestConnectionStep, LabelSummary } from '@shared/ipc'
 
@@ -36,16 +36,77 @@ function formatBytes(bytes: number): string {
 /** A titled block of settings; the page reads top to bottom like a document. */
 function Block({ title, description, action, children }: { title: string; description?: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }): JSX.Element {
   return (
-    <section className="py-7 border-b border-line last:border-b-0">
-      <div className="flex items-start gap-4 mb-4">
+    <section className="mt-10 first:mt-0">
+      <div className="flex items-end gap-4 mb-3">
         <div className="flex-1 min-w-0">
-          <h2 className="text-md font-semibold text-ink">{title}</h2>
-          {description && <p className="mt-1 text-sm text-ink-2 leading-relaxed">{description}</p>}
+          <h2 className="text-lg font-semibold text-ink">{title}</h2>
+          {description && <p className="mt-1 text-md text-ink-2 leading-relaxed">{description}</p>}
         </div>
         {action}
       </div>
       {children}
     </section>
+  )
+}
+
+function PageHead({ title, description }: { title: string; description: string }): JSX.Element {
+  return (
+    <header className="mb-10">
+      <h1 className="text-2xl font-semibold text-ink">{title}</h1>
+      <p className="mt-1.5 text-md text-ink-2">{description}</p>
+    </header>
+  )
+}
+
+/** Bordered group of rows, the way a settings page groups related options. */
+function Group({ children }: { children: React.ReactNode }): JSX.Element {
+  return <div className="rounded-xl border border-line bg-raised divide-y divide-line">{children}</div>
+}
+
+function Row({ label, description, control, indent = false, children, htmlFor }: { label: string; description?: string; control?: React.ReactNode; indent?: boolean; children?: React.ReactNode; htmlFor?: string }): JSX.Element {
+  return (
+    <div className={`px-5 py-4 ${indent ? 'pl-10' : ''}`}>
+      <div className="flex items-center gap-6">
+        <div className="flex-1 min-w-0">
+          <label htmlFor={htmlFor} className="block text-md font-medium text-ink">
+            {label}
+          </label>
+          {description && <p className="mt-0.5 text-sm text-ink-2">{description}</p>}
+        </div>
+        {control}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function Toggle({ id, checked, disabled, onChange }: { id: string; checked: boolean; disabled?: boolean; onChange: (v: boolean) => void }): JSX.Element {
+  return <input id={id} type="checkbox" role="switch" className="switch" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+}
+
+/** Miniature window used as the preview inside each theme option. */
+function ThemeThumb({ mode }: { mode: ThemeMode }): JSX.Element {
+  const pane = (bg: string, bar: string, side: string): JSX.Element => (
+    <span className="flex-1 flex gap-1.5 p-2" style={{ background: bg }}>
+      <span className="w-1/4 rounded-sm" style={{ background: side }} />
+      <span className="flex-1 flex flex-col gap-1 pt-0.5">
+        <span className="h-1 w-4/5 rounded-full" style={{ background: bar }} />
+        <span className="h-1 w-full rounded-full opacity-70" style={{ background: bar }} />
+        <span className="h-1 w-3/5 rounded-full opacity-50" style={{ background: bar }} />
+      </span>
+    </span>
+  )
+  const light = pane('#ffffff', '#d4d4d8', '#ececee')
+  const dark = pane('#151515', '#3a3a3a', '#232323')
+  return (
+    <span className="flex h-[70px] rounded-md overflow-hidden border border-line">
+      {mode === 'light' ? light : mode === 'dark' ? dark : (
+        <>
+          {light}
+          {dark}
+        </>
+      )}
+    </span>
   )
 }
 
@@ -67,29 +128,29 @@ export function SettingsView({ onBackToMail, onOpenAddAccount }: SettingsViewPro
 
   return (
     <div className="flex-1 min-w-0 flex max-md:flex-col">
-      <nav className="w-56 max-md:w-full flex-shrink-0 border-r max-md:border-r-0 max-md:border-b border-line px-3 py-4 flex md:flex-col gap-px max-md:overflow-x-auto" aria-label={t('settings.title')}>
-        <button type="button" onClick={onBackToMail} className="hidden md:flex items-center gap-1.5 h-7 px-2 mb-3 rounded text-xs text-ink-3 hover:text-ink hover:bg-hover">
+      <nav className="w-64 max-md:w-full flex-shrink-0 border-r max-md:border-r-0 max-md:border-b border-line px-3 py-5 flex md:flex-col gap-0.5 max-md:overflow-x-auto" aria-label={t('settings.title')}>
+        <button type="button" onClick={onBackToMail} className="hidden md:flex items-center gap-1.5 h-7 px-2 mb-3 rounded text-sm text-ink-3 hover:text-ink hover:bg-hover w-fit">
           <Icon name="arrow_back" className="!text-[16px]" />
           {t('settings.back_to_mail_short')}
         </button>
-        <h1 className="hidden md:block font-bold tracking-[-0.02em] text-2xl text-ink px-2 mb-4">{t('settings.title')}</h1>
+        <h1 className="hidden md:block font-semibold text-xl text-ink px-2 mb-4">{t('settings.title')}</h1>
         {SECTIONS.map((s) => (
           <button
             key={s.id}
             type="button"
             aria-current={section === s.id ? 'page' : undefined}
             onClick={() => setSection(s.id)}
-            className={`h-8 flex items-center gap-2.5 px-2.5 rounded text-sm whitespace-nowrap ${section === s.id ? 'bg-raised shadow-1 text-ink font-medium' : 'text-ink-2 hover:bg-hover hover:text-ink'}`}
+            className={`h-9 flex items-center gap-3 px-2.5 rounded-lg text-md whitespace-nowrap ${section === s.id ? 'bg-selected text-ink font-medium' : 'text-ink-2 hover:bg-hover hover:text-ink'}`}
           >
-            <Icon name={s.icon} className={section === s.id ? 'text-accent' : 'text-ink-3'} />
+            <Icon name={s.icon} className={`!text-[19px] ${section === s.id ? 'text-ink' : 'text-ink-3'}`} />
             <span className="flex-1 text-left">{t(s.key)}</span>
-            {counts[s.id] !== undefined && <span className="text-xs text-ink-3 tabular-nums">{counts[s.id]}</span>}
+            {counts[s.id] !== undefined && <span className="text-sm text-ink-3 tabular-nums">{counts[s.id]}</span>}
           </button>
         ))}
       </nav>
 
       <div className="flex-1 min-w-0 overflow-y-auto">
-        <div className="max-w-[720px] px-8 max-sm:px-4 pb-16">
+        <div className="max-w-[860px] px-16 max-lg:px-8 max-sm:px-4 pt-14 max-sm:pt-6 pb-16">
           {section === 'general' && <GeneralSection />}
           {section === 'accounts' && <AccountsSection onOpenAddAccount={onOpenAddAccount} />}
           {section === 'labels' && <LabelsSection />}
@@ -132,77 +193,78 @@ function GeneralSection(): JSX.Element {
     await window.mailapp.system.setLoginItemPrefs(next)
   }
 
-  const themes: [ThemeMode, string, string][] = [
-    ['light', 'light_mode', t('onboarding.appearance.theme.light')],
-    ['dark', 'dark_mode', t('onboarding.appearance.theme.dark')],
-    ['system', 'computer', t('onboarding.appearance.theme.system')]
-  ]
-  const languages: [Language, string, string][] = [
-    ['pl', 'Polski', t('settings.default_app_language')],
-    ['en', 'English', t('settings.english_ui_desc')]
-  ]
+  const themes: ThemeMode[] = ['light', 'dark', 'system']
 
   return (
     <>
-      <Block title={t('onboarding.appearance.theme')} description={t('onboarding.appearance.subtitle')}>
-        <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('onboarding.appearance.theme')}>
-          {themes.map(([mode, icon, label]) => (
-            <label key={mode} className="cursor-pointer">
-              <input type="radio" name="theme" className="peer sr-only" checked={theme === mode} onChange={() => setTheme(mode)} />
-              <span className="flex items-center gap-2 h-10 px-3 rounded border border-line-strong bg-raised text-sm text-ink-2 peer-checked:border-accent peer-checked:text-ink peer-checked:shadow-[0_0_0_1px_var(--accent)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                <Icon name={icon} />
-                {label}
-              </span>
-            </label>
-          ))}
-        </div>
-      </Block>
+      <PageHead title={t('settings.tab.general')} description={t('settings.general_desc')} />
 
-      <Block title={t('settings.language.title')} description={t('settings.language.desc')}>
-        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('settings.language.title')}>
-          {languages.map(([code, name, desc]) => (
-            <label key={code} className="cursor-pointer">
-              <input type="radio" name="language" className="peer sr-only" checked={language === code} onChange={() => setLanguage(code)} />
-              <span className="block px-3 py-2.5 rounded border border-line-strong bg-raised peer-checked:border-accent peer-checked:shadow-[0_0_0_1px_var(--accent)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                <span className="block text-sm font-medium text-ink">{name}</span>
-                <span className="block text-xs text-ink-3">{desc}</span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </Block>
-
-      <Block title={t('settings.desktop_notifications_title')} description={t('settings.notifications_always_desc')}>
-        <div className="divide-y divide-line">
-          <SwitchRow checked={flags.notifyNewMail} disabled={!flagsLoaded} onChange={(v) => setFlag('notifyNewMail', v)} label={t('settings.new_mail_label')} description={t('settings.new_mail_toggle_desc')} />
-          <SwitchRow checked={flags.notifyDesktop} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifyDesktop', v)} label={t('onboarding.notifications.desktop_title')} description={t('onboarding.notifications.desktop_desc')} />
-          <SwitchRow checked={flags.notifyPreview} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifyPreview', v)} label={t('onboarding.notifications.preview_title')} description={t('onboarding.notifications.preview_desc')} />
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <SwitchRow checked={flags.notifySound} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifySound', v)} label={t('onboarding.notifications.sound_title')} description={t('onboarding.notifications.sound_desc')} />
+      <Block title={t('settings.appearance_title')}>
+        <Group>
+          <Row label={t('onboarding.appearance.theme')} description={t('settings.theme_desc')}>
+            <div className="mt-4 grid grid-cols-3 max-sm:grid-cols-1 gap-3" role="radiogroup" aria-label={t('onboarding.appearance.theme')}>
+              {themes.map((mode) => (
+                <label key={mode} className="cursor-pointer">
+                  <input type="radio" name="theme" className="peer sr-only" checked={theme === mode} onChange={() => setTheme(mode)} />
+                  <span className="block p-2 rounded-lg border border-line-strong peer-checked:border-ink peer-checked:shadow-[0_0_0_1px_var(--ink)] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ink">
+                    <ThemeThumb mode={mode} />
+                    <span className="mt-2.5 mb-0.5 pl-1 flex items-center gap-2 text-md text-ink">
+                      <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${theme === mode ? 'border-ink' : 'border-line-strong'}`} aria-hidden="true">
+                        {theme === mode && <span className="w-2 h-2 rounded-full bg-ink" />}
+                      </span>
+                      {t(`onboarding.appearance.theme.${mode}`)}
+                    </span>
+                  </span>
+                </label>
+              ))}
             </div>
-            <Button size="xs" variant="ghost" icon="volume_up" onClick={() => playNotificationSound()}>
-              {t('onboarding.notifications.test_button')}
-            </Button>
-          </div>
-        </div>
-      </Block>
-
-      <Block title={t('onboarding.sync.title')}>
-        <SwitchRow checked={flags.autoSyncEnabled} disabled={!flagsLoaded} onChange={(v) => setFlag('autoSyncEnabled', v)} label={t('onboarding.sync.autosync_title')} description={t('onboarding.sync.autosync_desc')} />
-      </Block>
-
-      <Block title={t('settings.startup.title')} description={t('settings.startup.desc')}>
-        <div className="divide-y divide-line">
-          <SwitchRow checked={prefs.openAtLogin} disabled={!prefsLoaded} onChange={(v) => updatePrefs({ openAtLogin: v })} label={t('settings.startup.launch_at_login_label')} description={t('settings.startup.launch_at_login_desc')} />
-          <SwitchRow
-            checked={prefs.startMinimized}
-            disabled={!prefsLoaded || !prefs.openAtLogin}
-            onChange={(v) => updatePrefs({ startMinimized: v })}
-            label={t('settings.startup.start_minimized_label')}
-            description={t('settings.startup.start_minimized_desc')}
+          </Row>
+          <Row
+            label={t('settings.language.title')}
+            description={t('settings.language.desc')}
+            htmlFor="settings-language"
+            control={
+              <select id="settings-language" className="select !w-56 max-sm:!w-36" value={language} onChange={(e) => setLanguage(e.target.value as Language)}>
+                <option value="pl">Polski</option>
+                <option value="en">English</option>
+              </select>
+            }
           />
-        </div>
+        </Group>
+      </Block>
+
+      <Block title={t('settings.desktop_notifications_title')}>
+        <Group>
+          <Row label={t('settings.new_mail_label')} description={t('settings.new_mail_toggle_desc')} htmlFor="flag-notifyNewMail" control={<Toggle id="flag-notifyNewMail" checked={flags.notifyNewMail} disabled={!flagsLoaded} onChange={(v) => setFlag('notifyNewMail', v)} />} />
+          <Row indent label={t('onboarding.notifications.desktop_title')} description={t('onboarding.notifications.desktop_desc')} htmlFor="flag-notifyDesktop" control={<Toggle id="flag-notifyDesktop" checked={flags.notifyDesktop} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifyDesktop', v)} />} />
+          <Row indent label={t('onboarding.notifications.preview_title')} description={t('onboarding.notifications.preview_desc')} htmlFor="flag-notifyPreview" control={<Toggle id="flag-notifyPreview" checked={flags.notifyPreview} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifyPreview', v)} />} />
+          <Row
+            indent
+            label={t('onboarding.notifications.sound_title')}
+            description={t('onboarding.notifications.sound_desc')}
+            htmlFor="flag-notifySound"
+            control={
+              <span className="flex items-center gap-4">
+                <Button size="sm" icon="volume_up" onClick={() => playNotificationSound()}>
+                  {t('onboarding.notifications.test_button')}
+                </Button>
+                <Toggle id="flag-notifySound" checked={flags.notifySound} disabled={!flagsLoaded || !flags.notifyNewMail} onChange={(v) => setFlag('notifySound', v)} />
+              </span>
+            }
+          />
+        </Group>
+        <p className="mt-3 flex gap-2 text-sm text-ink-2 leading-relaxed">
+          <Icon name="info" className="!text-[17px] text-ink-3 mt-px" />
+          {t('settings.notifications_always_desc')}
+        </p>
+      </Block>
+
+      <Block title={t('settings.behaviour_title')}>
+        <Group>
+          <Row label={t('onboarding.sync.autosync_title')} description={t('onboarding.sync.autosync_desc')} htmlFor="flag-autoSync" control={<Toggle id="flag-autoSync" checked={flags.autoSyncEnabled} disabled={!flagsLoaded} onChange={(v) => setFlag('autoSyncEnabled', v)} />} />
+          <Row label={t('settings.startup.launch_at_login_label')} description={t('settings.startup.launch_at_login_desc')} htmlFor="pref-login" control={<Toggle id="pref-login" checked={prefs.openAtLogin} disabled={!prefsLoaded} onChange={(v) => updatePrefs({ openAtLogin: v })} />} />
+          <Row indent label={t('settings.startup.start_minimized_label')} description={t('settings.startup.start_minimized_desc')} htmlFor="pref-min" control={<Toggle id="pref-min" checked={prefs.startMinimized} disabled={!prefsLoaded || !prefs.openAtLogin} onChange={(v) => updatePrefs({ startMinimized: v })} />} />
+        </Group>
       </Block>
     </>
   )
@@ -231,8 +293,9 @@ function AccountsSection({ onOpenAddAccount }: { onOpenAddAccount: () => void })
 
   return (
     <>
+      <PageHead title={t('settings.tab.accounts')} description={t('settings.accounts_desc')} />
       <Block
-        title={t('settings.tab.accounts')}
+        title={t('settings.accounts_list_title')}
         description={lastSyncedAt ? `${t('settings.last_sync_label')} ${formatDate(lastSyncedAt, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : t('settings.accounts.never_synced')}
         action={
           <Button size="sm" icon="add" onClick={onOpenAddAccount}>
@@ -745,9 +808,10 @@ function LabelsSection(): JSX.Element {
   }, [loadLabels])
 
   return (
+    <>
+    <PageHead title={t('sidebar.labels')} description={t('settings.labels.desc')} />
     <Block
       title={t('settings.labels.title')}
-      description={t('settings.labels.desc')}
       action={
         <Button
           size="sm"
@@ -800,5 +864,6 @@ function LabelsSection(): JSX.Element {
         danger
       />
     </Block>
+    </>
   )
 }
