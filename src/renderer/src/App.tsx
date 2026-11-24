@@ -3,6 +3,7 @@ import { Sidebar } from './components/Sidebar'
 import { MessageList } from './components/MessageList'
 import { Reader } from './components/Reader'
 import { ContactDossier } from './components/ContactDossier'
+import { ContactsView } from './components/ContactsView'
 import { CommandPalette } from './components/CommandPalette'
 import { ComposerPane } from './components/ComposerPane'
 import { SettingsView } from './components/SettingsView'
@@ -13,17 +14,35 @@ import { Topbar } from './components/Topbar'
 import { StatsModal } from './components/StatsModal'
 import { AddAccountDialog } from './components/AddAccountDialog'
 import { OnboardingWizard } from './components/OnboardingWizard'
+import { ShortcutDialog } from './components/ShortcutDialog'
+import { canUsePlainShortcut, hasPrimaryModifier, hasShortcutOverlay, isTypingTarget } from './utils/keyboard'
 import { playNotificationSound } from './utils/sound'
 import { useAccountsStore } from './state/accounts-store'
 import { useMailStore } from './state/mail-store'
+import { useSchedulerStore } from './state/scheduler-store'
 import { useTranslation } from './i18n'
 
-export type AppView = 'mail' | 'thread-dossier' | 'settings' | 'calendar' | 'files'
+export type AppView = 'mail' | 'thread-dossier' | 'settings' | 'calendar' | 'files' | 'contacts'
 
 interface ComposePrefill {
   to?: string
   subject?: string
   bodyHtml?: string
+}
+
+function focusablePane(id: string): HTMLElement | undefined {
+  const pane = document.getElementById(id)
+  if (!pane || pane.closest('[hidden]') || pane.getClientRects().length === 0) return undefined
+  return getComputedStyle(pane).visibility === 'visible' ? pane : undefined
+}
+
+function focusNextPane(backward: boolean): boolean {
+  const panes = ['mail-search', 'mail-message-list', 'mail-reader'].map(focusablePane).filter((pane) => pane !== undefined)
+  if (panes.length === 0) return false
+  const current = panes.findIndex((pane) => pane.contains(document.activeElement))
+  const next = current < 0 ? (backward ? panes.length - 1 : 0) : (current + (backward ? -1 : 1) + panes.length) % panes.length
+  panes[next].focus()
+  return true
 }
 
 /** Preferences chosen in onboarding (and the list sort menu) that shape the first screen. */
@@ -43,6 +62,7 @@ export function App(): JSX.Element {
   const [statsOpen, setStatsOpen] = useState(false)
   const [addAccountOpen, setAddAccountOpen] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [dossierOpen, setDossierOpen] = useState(window.innerWidth >= 1280)
   const [dossierWidth, setDossierWidth] = useState<number>(() => {
     const stored = Number(localStorage.getItem('dossierWidth'))
@@ -64,6 +84,25 @@ export function App(): JSX.Element {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.innerWidth < 1024)
   const [mobileActivePane, setMobileActivePane] = useState<'list' | 'reader'>('list')
   const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+  const isMobile = windowWidth < 768
+
+  const openCompose = useCallback((prefill: ComposePrefill = {}): void => {
+    setComposePrefill(prefill)
+    setIsComposing(true)
+    setCurrentView('mail')
+    if (isMobile) setMobileActivePane('reader')
+  }, [isMobile])
+
+  const openInbox = useCallback((): void => {
+    const mail = useMailStore.getState()
+    const inbox = mail.folders.find((folder) => folder.type === 'inbox')
+    setCurrentView('mail')
+    setMobileActivePane('list')
+    void useSchedulerStore.getState().showView('none')
+    mail.setSearchQuery('')
+    if (inbox && useAccountsStore.getState().selectedAccountId) void mail.selectFolder(inbox.id)
+    else void mail.selectUnifiedInbox()
+  }, [])
 
   // Onboarding Wizard state
   const [checkingOnboarding, setCheckingOnboarding] = useState(true)
@@ -176,59 +215,72 @@ export function App(): JSX.Element {
       setCurrentView('settings')
     })
 
-    const cleanupInbox = window.mailapp?.tray?.onGoInbox?.(() => {
-      setCurrentView('mail')
-      const currentFolders = useMailStore.getState().folders
-      const inbox = currentFolders.find((f) => f.type === 'inbox')
-      if (inbox) {
-        useMailStore.getState().selectFolder(inbox.id)
-      } else {
-        useMailStore.getState().selectUnifiedInbox()
-      }
-    })
+    const cleanupInbox = window.mailapp?.tray?.onGoInbox?.(openInbox)
 
     return () => {
       cleanupCompose?.()
       cleanupSettings?.()
       cleanupInbox?.()
     }
-  }, [])
+  }, [openInbox])
 
-  // Global Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent): void => {
-      // ⌘K or Ctrl+K triggers command palette
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+      if (checkingOnboarding || showOnboarding || e.repeat) return
+      const key = e.key.toLowerCase()
+
+      if (hasPrimaryModifier(e) && key === 'k' && commandPaletteOpen) {
         e.preventDefault()
-        setCommandPaletteOpen((prev) => !prev)
+        setCommandPaletteOpen(false)
         return
       }
+      if (hasShortcutOverlay()) return
 
-      // ⌘, triggers settings view
-      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
-        e.preventDefault()
-        setCurrentView('settings')
+      if (currentView === 'mail' && canUsePlainShortcut(e) && e.key === 'F6') {
+        if (focusNextPane(e.shiftKey)) e.preventDefault()
         return
       }
+      if (isComposing && currentView === 'mail') return
 
-      // Avoid single-key shortcuts when typing in inputs/textareas
-      const tag = (e.target as HTMLElement)?.tagName?.toLowerCase()
-      const isEditable = (e.target as HTMLElement)?.isContentEditable
-      if (tag === 'input' || tag === 'textarea' || tag === 'select' || isEditable) {
+      if (hasPrimaryModifier(e) && (key === 'k' || key === ',')) {
+        e.preventDefault()
+        if (key === 'k') setCommandPaletteOpen(true)
+        else setCurrentView('settings')
         return
       }
+      if (!canUsePlainShortcut(e) || isTypingTarget(e.target)) return
 
-      if (e.key === 'c' || e.key === 'C') {
-        e.preventDefault()
-        setComposePrefill({})
-        setIsComposing(true)
-        setCurrentView('mail')
+      switch (key) {
+        case 'c':
+          if (e.shiftKey) return
+          openCompose()
+          break
+        case '/': {
+          const search = currentView === 'mail' ? focusablePane('mail-search') : undefined
+          if (search) search.focus()
+          else setCommandPaletteOpen(true)
+          break
+        }
+        case 'i':
+          if (!e.shiftKey) return
+          openInbox()
+          break
+        case 's':
+          if (!e.shiftKey) return
+          void useMailStore.getState().syncAllAccounts()
+          break
+        case '?':
+          setShortcutsOpen(true)
+          break
+        default:
+          return
       }
+      e.preventDefault()
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [checkingOnboarding, showOnboarding, currentView, isComposing, commandPaletteOpen, openCompose, openInbox])
 
   const handleReply = useCallback((to: string, subject: string, bodyHtml?: string) => {
     setComposePrefill({ to, subject, bodyHtml: bodyHtml ?? '' })
@@ -241,8 +293,6 @@ export function App(): JSX.Element {
     setIsComposing(true)
     setCurrentView('mail')
   }, [t])
-
-  const isMobile = windowWidth < 768
 
   if (checkingOnboarding) {
     return (
@@ -272,12 +322,6 @@ export function App(): JSX.Element {
 
   const closeSidebarOnNarrow = (): void => {
     if (windowWidth < 1024) setSidebarCollapsed(true)
-  }
-  const openCompose = (prefill: ComposePrefill = {}): void => {
-    setComposePrefill(prefill)
-    setIsComposing(true)
-    setCurrentView('mail')
-    if (isMobile) setMobileActivePane('reader')
   }
 
   return (
@@ -316,6 +360,8 @@ export function App(): JSX.Element {
             <CalendarView onBackToMail={() => setCurrentView('mail')} onOpenCompose={(prefill) => openCompose(prefill || {})} />
           ) : currentView === 'files' ? (
             <FilesDriveView onBackToMail={() => setCurrentView('mail')} onOpenThread={() => setCurrentView('thread-dossier')} />
+          ) : currentView === 'contacts' ? (
+            <ContactsView onOpenCompose={openCompose} />
           ) : currentView === 'thread-dossier' ? (
             <ThreadDossierView onBackToList={() => setCurrentView('mail')} onOpenCompose={(prefill) => openCompose(prefill || {})} />
           ) : (
@@ -324,7 +370,7 @@ export function App(): JSX.Element {
                 <MessageList onOpenThreadDossier={() => setCurrentView('thread-dossier')} />
               </div>
 
-              <div className="pane-reader" hidden={isMobile && mobileActivePane === 'list'}>
+              <div id="mail-reader" className="pane-reader" tabIndex={-1} hidden={isMobile && mobileActivePane === 'list'}>
                 {isComposing ? (
                   <ComposerPane
                     onClose={() => {
@@ -371,7 +417,18 @@ export function App(): JSX.Element {
         onOpenCompose={(prefill) => openCompose(prefill || {})}
         onOpenSettings={() => setCurrentView('settings')}
         onOpenStats={() => setStatsOpen(true)}
+        onOpenInbox={openInbox}
+        onOpenContacts={() => setCurrentView('contacts')}
+        onOpenShortcuts={() => setShortcutsOpen(true)}
+        onOpenMessage={(id) => {
+          setCurrentView('mail')
+          if (isMobile) setMobileActivePane('reader')
+          void useSchedulerStore.getState().showView('none')
+          void useMailStore.getState().selectMessage(id)
+        }}
       />
+
+      <ShortcutDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
       {/* Mailbox Analytics Modal */}
       <StatsModal

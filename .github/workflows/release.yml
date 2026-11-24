@@ -127,6 +127,13 @@ jobs:
           VERSION="$(node -p "require('./package.json').version")"
           TAG="v${VERSION}"
 
+          for MANIFEST in latest.yml latest-linux.yml; do
+            if ! grep -Fxq "version: ${VERSION}" "dist/${MANIFEST}"; then
+              echo "::error::dist/${MANIFEST} is missing or does not describe ${VERSION}."
+              exit 1
+            fi
+          done
+
           # A pushed tag must match package.json, otherwise installers and latest*.yml carry the wrong version.
           if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "${TAG}" ]; then
             echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${VERSION}."

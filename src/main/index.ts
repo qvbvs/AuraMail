@@ -9,6 +9,7 @@ import { startScheduler, stopScheduler } from './scheduler'
 import { idleManager } from './mail/idle-manager'
 import { initMainI18n } from './i18n'
 import { syncLoginItemSettings, START_MINIMIZED_ARG } from './system/login-item'
+import { startAppUpdater } from './system/app-updater'
 import log from 'electron-log'
 
 // Ustawione przez system, gdy proces wystartował z autostartu z opcją "zminimalizowana"
@@ -145,6 +146,7 @@ if (!gotSingleInstanceLock) {
     initMainI18n(getDb())
     syncLoginItemSettings(getDb())
     createTray(mainWindow)
+    startAppUpdater()
     startScheduler(getDb())
     idleManager.start(getDb())
 

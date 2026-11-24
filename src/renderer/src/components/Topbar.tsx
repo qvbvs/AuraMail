@@ -7,6 +7,7 @@ import { useTranslation } from '../i18n'
 import { WindowControls } from './WindowControls'
 import { Brand } from './Brand'
 import { Icon, IconButton } from './ui/Button'
+import { primaryModifierLabel } from '../utils/keyboard'
 
 interface TopbarProps {
   onToggleSidebar: () => void
@@ -24,20 +25,9 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
   const { view: specialView } = useSchedulerStore()
   const searchInputRef = useRef<HTMLInputElement>(null)
   const [focused, setFocused] = useState(true)
+  const modifier = primaryModifierLabel()
 
   useEffect(() => window.mailapp?.tray?.onFocusSearch?.(() => searchInputRef.current?.focus()), [])
-
-  // "/" focuses search, like most mail clients.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      const el = e.target as HTMLElement
-      if (e.key !== '/' || el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName)) return
-      e.preventDefault()
-      searchInputRef.current?.focus()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [])
 
   useEffect(() => {
     const on = (): void => setFocused(true)
@@ -94,6 +84,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
           <Icon name="search" className="absolute left-3 text-ink-3 pointer-events-none" />
           <span className="sr-only">{t('common.search')}</span>
           <input
+            id="mail-search"
             ref={searchInputRef}
             type="search"
             className="w-full h-full bg-transparent pl-9 pr-20 text-md text-ink placeholder:text-ink-3 outline-none [&::-webkit-search-cancel-button]:hidden"
@@ -102,6 +93,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
+                e.preventDefault()
                 setSearchQuery('')
                 searchInputRef.current?.blur()
               }
@@ -111,8 +103,8 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
             {searchQuery ? (
               <IconButton icon="close" label={t('topbar.clear_search')} size="xs" onClick={() => setSearchQuery('')} />
             ) : (
-              <button type="button" onClick={onOpenCommandPalette} title={t('topbar.command_palette_hint')} className="flex gap-0.5">
-                <kbd className="kbd">Ctrl</kbd>
+              <button type="button" onClick={onOpenCommandPalette} title={t('topbar.command_palette_hint', { modifier })} className="flex gap-0.5">
+                <kbd className="kbd">{modifier}</kbd>
                 <kbd className="kbd">K</kbd>
               </button>
             )}
@@ -121,7 +113,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
       </div>
 
       <div className="flex items-center justify-end h-full app-no-drag">
-        <IconButton icon="search" label={t('common.search')} shortcut="Ctrl K" onClick={onOpenCommandPalette} className="sm:hidden" />
+        <IconButton icon="search" label={t('common.search')} shortcut={`${modifier}+K`} onClick={onOpenCommandPalette} className="sm:hidden" />
         <IconButton
           icon={resolvedTheme === 'dark' ? 'light_mode' : 'dark_mode'}
           label={t('topbar.toggle_theme')}

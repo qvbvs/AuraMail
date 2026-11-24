@@ -93,6 +93,25 @@ export interface LabelSummary {
   unreadCount: number
 }
 
+export interface ContactFields {
+  firstName: string
+  lastName: string
+  email: string
+  company: string
+  phone: string
+  notes: string
+}
+
+export interface ContactSummary extends ContactFields {
+  id: string
+}
+
+export interface SaveContactInput extends ContactFields {
+  id?: string
+}
+
+export type SaveContactResult = { ok: true; contact: ContactSummary } | { ok: false; reason: 'duplicate_email' }
+
 export interface CreateLabelInput {
   name: string
   color: string
@@ -312,6 +331,9 @@ export const IPC = {
   accountsUpdate: 'accounts:update',
   accountsUpdateCredential: 'accounts:updateCredential',
   accountsTestConnection: 'accounts:testConnection',
+  contactsList: 'contacts:list',
+  contactsSave: 'contacts:save',
+  contactsDelete: 'contacts:delete',
   foldersList: 'folders:list',
   syncAccount: 'sync:account',
   syncFolder: 'sync:folder',

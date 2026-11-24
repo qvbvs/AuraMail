@@ -80,6 +80,16 @@
   border-right: 1px solid var(--line);
 }
 
+.message-list-row {
+  padding-block: var(--message-row-padding);
+}
+.message-list-unread {
+  top: calc(var(--message-row-padding) + 7px);
+}
+.message-list-actions {
+  top: max(2px, calc(var(--message-row-padding) - 4px));
+}
+
 .pane-reader {
   flex: 1;
   min-width: 0;

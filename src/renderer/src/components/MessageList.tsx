@@ -12,6 +12,7 @@ import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Modal } from './ui/Modal'
 import { Button, Icon, IconButton } from './ui/Button'
 import { groupByDay, type DayBucket } from '../utils/date-groups'
+import { canUsePlainShortcut, hasShortcutOverlay, isTypingTarget } from '../utils/keyboard'
 import type { MessageListItem } from '@shared/ipc'
 
 interface MessageListProps {
@@ -161,9 +162,10 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
     ]
   }
 
-  // Keyboard triage on the focused list: ↑/↓ or j/k move, s star, u read/unread, # / Delete trash, e archive.
+  // Keyboard triage follows the order shown in the focused message list.
   const onListKeyDown = (e: React.KeyboardEvent): void => {
-    if (e.ctrlKey || e.metaKey || e.altKey || ordered.length === 0) return
+    if (!canUsePlainShortcut(e.nativeEvent) || isTypingTarget(e.target) || hasShortcutOverlay() || ordered.length === 0) return
+    if (e.shiftKey && e.key !== '#') return
     const idx = ordered.findIndex((m) => m.id === selectedMessageId)
     const current = ordered[idx]
     const go = (i: number): void => {
@@ -171,33 +173,36 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
       selectMessage(next.id)
       document.getElementById(`msg-${next.id}`)?.scrollIntoView({ block: 'nearest' })
     }
-    switch (e.key) {
-      case 'ArrowDown':
+    switch (e.key.toLowerCase()) {
+      case 'arrowdown':
       case 'j':
         go(idx + 1)
         break
-      case 'ArrowUp':
+      case 'arrowup':
       case 'k':
         go(idx < 0 ? 0 : idx - 1)
         break
-      case 'Home':
+      case 'home':
         go(0)
         break
-      case 'End':
+      case 'end':
         go(ordered.length - 1)
         break
       case 's':
-        if (current) setMessageFlags(current.id, { isStarred: !current.isStarred })
+        if (!e.repeat && current) setMessageFlags(current.id, { isStarred: !current.isStarred })
         break
       case 'u':
-        if (current) setMessageFlags(current.id, { isRead: !current.isRead })
+        if (!e.repeat && current) setMessageFlags(current.id, { isRead: !current.isRead })
+        break
+      case 'p':
+        if (!e.repeat && current) togglePinned(current.id)
         break
       case 'e':
-        if (current && archiveFolder && current.folderId !== archiveFolder.id) moveMessage(current.id, archiveFolder.id)
+        if (!e.repeat && current && archiveFolder && current.folderId !== archiveFolder.id) moveMessage(current.id, archiveFolder.id)
         break
-      case 'Delete':
+      case 'delete':
       case '#':
-        if (current) trash(current)
+        if (!e.repeat && current) trash(current)
         break
       default:
         return
@@ -288,6 +293,7 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
       )}
 
       <div
+        id="mail-message-list"
         ref={listRef}
         className="flex-1 overflow-y-auto focus:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--accent)]"
         role="listbox"
@@ -371,11 +377,11 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
                       e.preventDefault()
                       setMenu({ x: e.clientX, y: e.clientY, items: buildContextMenuItems(m) })
                     }}
-                    className={`group relative mx-2 pl-6 pr-3 py-2.5 rounded-lg cursor-default transition-colors ${
+                    className={`message-list-row group relative mx-2 pl-6 pr-3 rounded-lg cursor-default transition-colors ${
                       selected ? 'bg-selected' : 'hover:bg-hover'
                     }`}
                   >
-                    {!m.isRead && <span className="absolute left-2.5 top-[17px] w-[7px] h-[7px] rounded-full bg-flag" role="img" aria-label={t('messageList.props.status_unread')} />}
+                    {!m.isRead && <span className="message-list-unread absolute left-2.5 w-[7px] h-[7px] rounded-full bg-flag" role="img" aria-label={t('messageList.props.status_unread')} />}
 
                     <div className="flex items-center gap-2">
                       <span className={`truncate text-md ${m.isRead ? 'text-ink' : 'text-ink font-semibold'}`}>{sender}</span>
@@ -413,7 +419,7 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
                     )}
 
                     {/* Hover actions replace the meta column; also reachable via context menu and keyboard. */}
-                    <div className="absolute right-2 top-1.5 hidden group-hover:flex group-focus-within:flex bg-raised rounded shadow-2 p-0.5" onClick={(e) => e.stopPropagation()}>
+                    <div className="message-list-actions absolute right-2 hidden group-hover:flex group-focus-within:flex bg-raised rounded shadow-2 p-0.5" onClick={(e) => e.stopPropagation()}>
                       <IconButton
                         size="sm"
                         icon={<Icon name="star" fill={m.isStarred} className={m.isStarred ? 'text-warn' : ''} />}

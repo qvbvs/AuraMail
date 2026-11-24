@@ -30,7 +30,8 @@ Built with **Electron**, **React**, **TypeScript**, and **SQLCipher**.
 - **Real-time sync** — IMAP IDLE push, automatic reconnect, sleep/wake recovery
 - **Offline search** — full-text search across your mailbox via SQLite FTS5
 - **Rich composer** — Tiptap editor with checklists, code blocks, send later, and snooze
-- **One workspace** — integrated calendar, contact timeline, thread notes, automation rules
+- **One workspace** — integrated calendar, searchable address book, contact timeline, thread notes, automation rules
+- **Personalized workspace** — colour accents, message list spacing, and adjustable reading text size
 - **Keyboard-first** — global command palette (`Ctrl K`) and full keyboard navigation
 - **Multi-account** — unified inbox, each account with its own identity and color
 - **Multilingual** — English and Polish interface
@@ -75,6 +76,12 @@ Main process  (Mail · SMTP · Sync · Calendar · Scheduler)
 | Testing | Vitest · Playwright |
 
 ## Installation
+
+Download an installer or AppImage from [GitHub Releases](https://github.com/qvbvs/AuraMail/releases).
+
+AuraMail 0.3.0 and later check for new stable releases on launch and every 15 minutes while running. Updates download in the background and install when you choose **Quit** from the system tray. Choose **Install Update and Restart** to apply a downloaded update immediately. Linux package installers may ask for administrator approval.
+
+### Running from source
 
 **Requirements:** Node.js 24+, Git, C/C++ build tools (plus `libsecret` dev headers on Linux)
 
@@ -122,11 +129,17 @@ Found a vulnerability? See [SECURITY.md](./SECURITY.md).
 |---|---|
 | `Ctrl K` | Command palette |
 | `C` | New message |
-| `Ctrl Enter` | Send |
-| `E` | Archive |
-| `S` | Star / unstar |
-| `Delete` | Move to trash |
-| `Esc` | Close active view |
+| `/` | Focus mail search |
+| `Shift I` | Go to Inbox |
+| `Shift S` | Sync all accounts |
+| `F6` / `Shift F6` | Move between search, message list, and reader |
+| `↑` / `↓` or `K` / `J` | Select previous / next message in the list |
+| `S` / `U` / `P` | Toggle star / read status / pin in the list |
+| `E` / `Delete` | Archive / move to trash from the list |
+| `R` / `F` | Reply / forward |
+| `Ctrl Enter` | Send from the composer or quick reply |
+| `Esc` | Close the active dialog, menu, or composer |
+| `?` | Show keyboard shortcuts |
 
 ## Build
 
@@ -146,9 +159,9 @@ Artifacts land in `dist/` — `.exe`/NSIS on Windows, `.AppImage`/`.deb`/`.rpm` 
 
 - [ ] Advanced automation rules
 - [ ] Additional calendar integrations
-- [ ] Improved contact management
-- [ ] More customization options
-- [ ] Extended keyboard workflows
+- [x] Improved contact management
+- [x] More customization options
+- [x] Extended keyboard workflows
 
 ## Contributing
 

@@ -277,6 +277,7 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
         <Section title={t('sidebar.tools')}>
           <NavItem active={currentView === 'calendar'} icon="calendar_today" label={t('sidebar.tool.calendar')} onClick={() => onNavigateView?.('calendar')} />
           <NavItem active={currentView === 'files'} icon="attach_file" label={t('sidebar.tool.files')} onClick={() => onNavigateView?.('files')} />
+          <NavItem active={currentView === 'contacts'} icon="contacts" label={t('sidebar.tool.contacts')} onClick={() => onNavigateView?.('contacts')} />
           {onOpenStats && <NavItem active={false} icon="monitoring" label={t('sidebar.tool.stats')} onClick={onOpenStats} />}
         </Section>
       </nav>

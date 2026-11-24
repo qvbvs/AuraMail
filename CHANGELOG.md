@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Automatic downloads of stable GitHub releases, with installation on quit and an option to restart from the tray.
+- Searchable address book with contact editing, sender saving, and recipient suggestions.
+- Custom accent colours, message list spacing, and reading text size.
+- Keyboard shortcut help, inbox and sync shortcuts, pane navigation, and message pinning.
+
 ---
 
 ## [0.2.0] - 2026-11-24

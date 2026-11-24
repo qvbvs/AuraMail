@@ -6,6 +6,7 @@ import Underline from '@tiptap/extension-underline'
 import type { ComposeAttachment, PickedFile } from '@shared/ipc'
 import { useAccountsStore } from '../state/accounts-store'
 import { useTranslation } from '../i18n'
+import { hasPrimaryModifier, hasShortcutOverlay, primaryModifierLabel } from '../utils/keyboard'
 import { Button, Icon, IconButton } from './ui/Button'
 import { ContextMenu, type ContextMenuItem } from './ui/ContextMenu'
 import { ConfirmDialog } from './ui/ConfirmDialog'
@@ -70,6 +71,7 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
   const [dragOver, setDragOver] = useState(false)
   const [, forceToolbarRender] = useState(0)
   const initialBodyRef = useRef<string | null>(null)
+  const paneRef = useRef<HTMLElement>(null)
 
   const editor = useEditor({
     extensions: [StarterKit, Link.configure({ openOnClick: false, autolink: true }), Underline],
@@ -147,6 +149,7 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
   const schedule = (sendAt: Date): Promise<void> => run(() => window.mailapp.scheduled.send({ ...payload(), sendAt: sendAt.toISOString(), timezone: timeZone }))
 
   function handleSend(): void {
+    if (sending) return
     if (!warnNoAttachment && attachments.length === 0 && ATTACHMENT_HINT.test(editor?.getText() ?? '')) {
       setWarnNoAttachment(true)
       return
@@ -156,20 +159,24 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
 
   const requestClose = (): void => (isDirty ? setConfirmDiscard(true) : onClose())
 
-  // Ctrl+Enter sends; Esc closes (asking first when there is something to lose).
-  const handlersRef = useRef({ handleSend, requestClose })
-  handlersRef.current = { handleSend, requestClose }
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => {
-      if (document.querySelector('[role="dialog"], .context-menu')) return
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault()
-        handlersRef.current.handleSend()
-      } else if (e.key === 'Escape') {
-        e.preventDefault()
-        handlersRef.current.requestClose()
-      }
+  const handleComposerKey = useRef<(e: KeyboardEvent) => boolean>(() => false)
+  handleComposerKey.current = (e) => {
+    if (e.defaultPrevented || e.isComposing || e.repeat || hasShortcutOverlay()) return false
+    if (e.key === 'Enter' && hasPrimaryModifier(e) && paneRef.current?.contains(document.activeElement)) {
+      e.preventDefault()
+      handleSend()
+      return true
     }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      requestClose()
+      return true
+    }
+    return false
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => { handleComposerKey.current(e) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
@@ -229,6 +236,7 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
 
   return (
     <section
+      ref={paneRef}
       className="flex-1 min-w-0 h-full flex flex-col relative"
       data-testid="composer-pane"
       aria-label={t('composer.title')}
@@ -348,7 +356,12 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
           <label htmlFor="composer-link" className="sr-only">
             {t('composer.toolbar.link_prompt')}
           </label>
-          <input id="composer-link" autoFocus className="input !h-7 flex-1" placeholder="https://" value={linkValue} onChange={(e) => setLinkValue(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setLinkOpen(false)} />
+          <input id="composer-link" autoFocus className="input !h-7 flex-1" placeholder="https://" value={linkValue} onChange={(e) => setLinkValue(e.target.value)} onKeyDown={(e) => {
+            if (e.key !== 'Escape' || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            setLinkOpen(false)
+            editor?.commands.focus()
+          }} />
           <Button size="sm" type="submit" variant="primary">
             {t('common.save')}
           </Button>
@@ -387,7 +400,13 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
       )}
 
       <div className="flex-1 overflow-y-auto px-8 py-5 cursor-text" onClick={(e) => e.target === e.currentTarget && editor?.commands.focus('end')}>
-        <EditorContent editor={editor} className="max-w-[720px]" />
+        <EditorContent
+          editor={editor}
+          className="max-w-[720px]"
+          onKeyDownCapture={(e) => {
+            if (handleComposerKey.current(e.nativeEvent)) e.stopPropagation()
+          }}
+        />
       </div>
 
       {attachments.length > 0 && (
@@ -407,7 +426,7 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
 
       <footer className="flex-shrink-0 flex items-center gap-2 px-4 py-2.5 border-t border-line">
         <div className="inline-flex">
-          <Button variant="primary" icon="send" loading={sending} onClick={handleSend} className="rounded-r-none" title={`${t('composer.send')} (Ctrl+Enter)`}>
+          <Button variant="primary" icon="send" loading={sending} onClick={handleSend} className="rounded-r-none" title={`${t('composer.send')} (${primaryModifierLabel()}+Enter)`}>
             {sending ? t('composer.sending') : t('composer.send')}
           </Button>
           <button

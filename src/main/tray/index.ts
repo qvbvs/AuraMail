@@ -4,6 +4,8 @@ import { mt, type MainLanguage, setMainLanguage } from '../i18n'
 
 let tray: Tray | null = null
 let currentMainWindow: BrowserWindow | null = null
+let updateAction: (() => void) | null = null
+let syncPaused = false
 
 function buildMenu(mainWindow: BrowserWindow): Menu {
   return Menu.buildFromTemplate([
@@ -19,15 +21,22 @@ function buildMenu(mainWindow: BrowserWindow): Menu {
     { label: mt('traySearch'), click: () => mainWindow.webContents.send('tray:focus-search') },
     { type: 'separator' },
     { label: mt('traySyncNow'), click: () => mainWindow.webContents.send('tray:sync-now') },
-    { label: mt('traySyncPause'), type: 'checkbox', click: (item) => mainWindow.webContents.send('tray:sync-pause', item.checked) },
+    {
+      label: mt('traySyncPause'),
+      type: 'checkbox',
+      checked: syncPaused,
+      click: (item) => {
+        syncPaused = item.checked
+        mainWindow.webContents.send('tray:sync-pause', syncPaused)
+      }
+    },
     { type: 'separator' },
     { label: mt('traySettings'), click: () => mainWindow.webContents.send('tray:open-settings') },
     { type: 'separator' },
+    ...(updateAction ? [{ label: mt('trayInstallUpdate'), click: updateAction }] : []),
     {
       label: mt('trayQuit'),
-      click: () => {
-        app.exit(0)
-      }
+      click: () => app.quit()
     }
   ])
 }
@@ -50,6 +59,15 @@ export function createTray(mainWindow: BrowserWindow): Tray {
 
 export function updateTrayLanguage(lang: MainLanguage): void {
   setMainLanguage(lang)
+  refreshMenu()
+}
+
+export function setTrayUpdateAction(action: (() => void) | null): void {
+  updateAction = action
+  refreshMenu()
+}
+
+function refreshMenu(): void {
   if (tray && currentMainWindow && !currentMainWindow.isDestroyed()) {
     tray.setContextMenu(buildMenu(currentMainWindow))
   }
@@ -59,4 +77,6 @@ export function destroyTray(): void {
   tray?.destroy()
   tray = null
   currentMainWindow = null
+  updateAction = null
+  syncPaused = false
 }

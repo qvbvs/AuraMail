@@ -1,6 +1,6 @@
 /* ==========================================================================
-   AuraMail design tokens — neutral graphite
-   Monochrome surfaces and controls; the only hue is amber for unread mail.
+   AuraMail design tokens
+   Neutral surfaces with configurable accents and amber unread markers.
    Every colour used by the UI comes from here; components never hard-code hex.
    ========================================================================== */
 
@@ -37,6 +37,7 @@
   --titlebar-h: 48px;
   --sidebar-w: 248px;
   --list-w: 380px;
+  --message-row-padding: 10px;
 }
 
 /* ---------------------------------------------------------------- light -- */
@@ -58,7 +59,7 @@
   --ink-2: #52525b;
   --ink-3: #6e6e78;
 
-  /* Interaction is monochrome: the strongest control is ink on canvas. */
+  /* Graphite accent */
   --accent: #18181b;
   --accent-hover: #2e2e33;
   --accent-soft: #e9e9eb;
@@ -123,6 +124,43 @@
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-2: 0 12px 32px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--line-strong);
   --shadow-3: 0 28px 70px -16px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--line-strong);
+}
+
+[data-accent]:not([data-accent='graphite']) {
+  --accent-ink: var(--accent);
+  --accent-soft: color-mix(in srgb, var(--accent) 13%, var(--panel));
+  --selected: var(--accent-soft);
+}
+[data-accent='blue'] {
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+}
+[data-theme='dark'][data-accent='blue'] {
+  --accent: #93c5fd;
+  --accent-hover: #bfdbfe;
+}
+[data-accent='teal'] {
+  --accent: #0f766e;
+  --accent-hover: #115e59;
+}
+[data-theme='dark'][data-accent='teal'] {
+  --accent: #5eead4;
+  --accent-hover: #99f6e4;
+}
+[data-accent='violet'] {
+  --accent: #6d28d9;
+  --accent-hover: #5b21b6;
+}
+[data-theme='dark'][data-accent='violet'] {
+  --accent: #c4b5fd;
+  --accent-hover: #ddd6fe;
+}
+
+[data-message-density='compact'] {
+  --message-row-padding: 6px;
+}
+[data-message-density='spacious'] {
+  --message-row-padding: 15px;
 }
 
 /* ---------------------------------------------------------------- base --- */

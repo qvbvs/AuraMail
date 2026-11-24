@@ -4,7 +4,9 @@ import { basename, extname, join } from 'node:path'
 import { z } from 'zod'
 import log from 'electron-log'
 import { IPC, type LoginItemPrefs } from '@shared/ipc'
+import { isValidEmail } from '@shared/email-address'
 import { getDb } from '../database'
+import { deleteContact, listContacts, saveContact } from '../database/contacts-repository'
 import {
   createAccount,
   deleteAccount,
@@ -103,6 +105,15 @@ const testConnectionSchema = z.object({
 })
 const deleteAccountSchema = z.string().uuid()
 const uuidSchema = z.string().uuid()
+const saveContactSchema = z.object({
+  id: uuidSchema.optional(),
+  firstName: z.string().trim().max(100),
+  lastName: z.string().trim().max(100),
+  email: z.string().trim().max(254).refine(isValidEmail),
+  company: z.string().trim().max(200),
+  phone: z.string().trim().max(80),
+  notes: z.string().trim().max(2000)
+})
 const listMessagesSchema = z.object({
   folderId: z.string().uuid(),
   limit: z.number().int().min(1).max(500).optional(),
@@ -216,6 +227,16 @@ const settingSetSchema = z.object({
 })
 
 export function registerIpcHandlers(): void {
+  ipcMain.handle(IPC.contactsList, withErrorLogging(IPC.contactsList, () => listContacts(getDb())))
+  ipcMain.handle(
+    IPC.contactsSave,
+    withErrorLogging(IPC.contactsSave, (_event, rawInput: unknown) => saveContact(getDb(), saveContactSchema.parse(rawInput)))
+  )
+  ipcMain.handle(
+    IPC.contactsDelete,
+    withErrorLogging(IPC.contactsDelete, (_event, rawId: unknown) => deleteContact(getDb(), uuidSchema.parse(rawId)))
+  )
+
   ipcMain.handle(
     IPC.accountsList,
     withErrorLogging(IPC.accountsList, () => listAccounts(getDb()))

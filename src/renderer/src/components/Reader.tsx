@@ -7,6 +7,7 @@ import { Skeleton } from './ui/Skeleton'
 import { Button, Icon, IconButton } from './ui/Button'
 import { ContextMenu, type ContextMenuItem } from './ui/ContextMenu'
 import { buildQuote, prefixSubject, textToHtml } from '../utils/quote'
+import { canUsePlainShortcut, hasPrimaryModifier, hasShortcutOverlay, isTypingTarget, primaryModifierLabel } from '../utils/keyboard'
 import { MailBody, hasRemoteImages as detectRemoteImages } from './MailBody'
 import type { AttachmentSummary, MessageDetail } from '@shared/ipc'
 
@@ -33,11 +34,6 @@ function parseRecipients(json: string | undefined): string[] {
   } catch {
     return []
   }
-}
-
-const isTyping = (el: EventTarget | null): boolean => {
-  const n = el as HTMLElement | null
-  return !!n && (n.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(n.tagName))
 }
 
 export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, isDossierOpen, onOpenThreadDossier }: ReaderProps): JSX.Element {
@@ -102,7 +98,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
   useEffect(() => {
     if (!detail) return
     const onKey = (e: KeyboardEvent): void => {
-      if (e.ctrlKey || e.metaKey || e.altKey || isTyping(e.target) || document.querySelector('[role="dialog"]')) return
+      if (e.repeat || !canUsePlainShortcut(e) || isTypingTarget(e.target) || hasShortcutOverlay()) return
       if (e.key === 'r' || e.key === 'R') {
         e.preventDefault()
         reply()
@@ -123,7 +119,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
         description={t('reader.select_prompt')}
         hints={[
           { keys: 'C', label: t('emptyState.new_message') },
-          { keys: 'Ctrl K', label: t('emptyState.search') },
+          { keys: `${primaryModifierLabel()}+K`, label: t('emptyState.search') },
           { keys: '↑ ↓', label: t('reader.hint_navigate') },
           { keys: 'R', label: t('reader.reply') }
         ]}
@@ -384,7 +380,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
             placeholder={t('reader.quick_reply.placeholder_to', { name: sender })}
             className="block w-full resize-none bg-transparent px-3 pt-2 pb-1 text-sm text-ink placeholder:text-ink-3 outline-none"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              if (!e.repeat && e.key === 'Enter' && hasPrimaryModifier(e.nativeEvent) && !hasShortcutOverlay()) {
                 e.preventDefault()
                 sendQuickReply()
               }
@@ -394,7 +390,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
             <span className="flex-1 text-2xs truncate" aria-live="polite">
               {quickState === 'sent' && <span className="text-ok">{t('reader.quick_reply.sent')}</span>}
               {quickState === 'error' && <span className="text-danger">{quickError}</span>}
-              {quickState === 'idle' && quickReply && <span className="text-ink-3">{t('reader.quick_reply.hint')}</span>}
+              {quickState === 'idle' && quickReply && <span className="text-ink-3">{t('reader.quick_reply.hint', { modifier: primaryModifierLabel() })}</span>}
             </span>
             <Button type="button" size="xs" variant="ghost" icon="open_in_full" onClick={() => reply(quickReply.trim() ? textToHtml(quickReply) : '')}>
               {t('reader.quick_reply.open_full')}

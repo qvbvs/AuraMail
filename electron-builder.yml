@@ -5,13 +5,11 @@ directories:
 publish:
   provider: github
   owner: qvbvs
-  repo: auramail
+  repo: AuraMail
   releaseType: release
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
-  - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - out/**
+  - resources/**
 asarUnpack:
   - resources/**
 win:

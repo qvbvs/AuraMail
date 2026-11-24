@@ -3,7 +3,7 @@ import { useAccountsStore } from '../state/accounts-store'
 import { useMailStore } from '../state/mail-store'
 import { useLabelsStore } from '../state/labels-store'
 import { useTranslation, getLocalizedLabelName, type Language } from '../i18n'
-import { useTheme, type ThemeMode } from '../theme/ThemeContext'
+import { accentOptions, densityOptions, readingSizeOptions, useTheme, type ThemeMode } from '../theme/ThemeContext'
 import { LabelDialog } from './LabelDialog'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { Button, Icon, IconButton } from './ui/Button'
@@ -110,6 +110,27 @@ function ThemeThumb({ mode }: { mode: ThemeMode }): JSX.Element {
   )
 }
 
+function AppearanceOption<Value extends string>({ setting, options, value, onChange }: {
+  setting: string
+  options: readonly Value[]
+  value: Value
+  onChange: (value: Value) => void
+}): JSX.Element {
+  const { t } = useTranslation()
+  const id = `appearance-${setting}`
+  const key = `settings.${setting}`
+  return (
+    <Row label={t(`${key}.title`)} description={t(`${key}.desc`)} htmlFor={id} control={
+      <select id={id} className="select !w-56 max-sm:!w-36" value={value} onChange={(e) => {
+        const selected = options.find((option) => option === e.target.value)
+        if (selected) onChange(selected)
+      }}>
+        {options.map((option) => <option value={option} key={option}>{t(`${key}.${option}`)}</option>)}
+      </select>
+    } />
+  )
+}
+
 function Notice({ ok, children }: { ok: boolean; children: React.ReactNode }): JSX.Element {
   return (
     <p role={ok ? 'status' : 'alert'} className={`flex items-center gap-1.5 text-xs ${ok ? 'text-ok' : 'text-danger'}`}>
@@ -164,7 +185,7 @@ export function SettingsView({ onBackToMail, onOpenAddAccount }: SettingsViewPro
 
 function GeneralSection(): JSX.Element {
   const { language, setLanguage, t } = useTranslation()
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme, appearance, updateAppearance } = useTheme()
   // Boolean settings read by the main process on every sync/notification ('false' = off, default on).
   const FLAGS = ['notifyNewMail', 'notifyDesktop', 'notifySound', 'notifyPreview', 'autoSyncEnabled'] as const
   const [flags, setFlags] = useState<Record<(typeof FLAGS)[number], boolean>>({ notifyNewMail: true, notifyDesktop: true, notifySound: true, notifyPreview: true, autoSyncEnabled: true })
@@ -219,6 +240,9 @@ function GeneralSection(): JSX.Element {
               ))}
             </div>
           </Row>
+          <AppearanceOption setting="accent" options={accentOptions} value={appearance.accent} onChange={(accent) => updateAppearance({ accent })} />
+          <AppearanceOption setting="density" options={densityOptions} value={appearance.density} onChange={(density) => updateAppearance({ density })} />
+          <AppearanceOption setting="reading_size" options={readingSizeOptions} value={appearance.readingSize} onChange={(readingSize) => updateAppearance({ readingSize })} />
           <Row
             label={t('settings.language.title')}
             description={t('settings.language.desc')}

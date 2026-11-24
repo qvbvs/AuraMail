@@ -4,6 +4,9 @@ import type {
   AccountSummary,
   AccountConnectionStatus,
   CreateAccountInput,
+  ContactSummary,
+  SaveContactInput,
+  SaveContactResult,
   FolderSummary,
   FollowUpSummary,
   MessageDetail,
@@ -35,6 +38,11 @@ import type {
 } from '@shared/ipc'
 
 const api = {
+  contacts: {
+    list: (): Promise<ContactSummary[]> => ipcRenderer.invoke(IPC.contactsList),
+    save: (input: SaveContactInput): Promise<SaveContactResult> => ipcRenderer.invoke(IPC.contactsSave, input),
+    delete: (id: string): Promise<void> => ipcRenderer.invoke(IPC.contactsDelete, id)
+  },
   accounts: {
     list: (): Promise<AccountSummary[]> => ipcRenderer.invoke(IPC.accountsList),
     create: (input: CreateAccountInput): Promise<AccountSummary> => ipcRenderer.invoke(IPC.accountsCreate, input),

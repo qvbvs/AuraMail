@@ -1,6 +1,6 @@
 {
   "name": "auramail",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "AuraMail — nowoczesny klient poczty (Electron)",
   "main": "./out/main/index.js",
   "author": {

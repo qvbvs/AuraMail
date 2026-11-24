@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { isValidEmail } from '@shared/email-address'
+import type { SaveContactInput } from '@shared/ipc'
 import { useMailStore } from '../state/mail-store'
 import { useAccountsStore } from '../state/accounts-store'
+import { useContactsStore } from '../state/contacts-store'
 import { useTranslation } from '../i18n'
+import { contactName, emptyContact } from '../utils/contacts'
+import { ContactEditor } from './ContactEditor'
 import { Button, IconButton } from './ui/Button'
 
 interface ContactDossierProps {
@@ -19,16 +24,25 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
   const { t, formatDate } = useTranslation()
   const { selectedMessageDetail, messages, selectMessage } = useMailStore()
   const accounts = useAccountsStore((s) => s.accounts)
+  const { contacts, status: contactsStatus, load: loadContacts, save: saveContact } = useContactsStore()
   const [resizing, setResizing] = useState(false)
   const resizeStartRef = useRef<{ startX: number; startWidth: number } | null>(null)
   const [copiedEmail, setCopiedEmail] = useState(false)
-  const [note, setNote] = useState('')
-  const [savedNote, setSavedNote] = useState('')
-  const [noteState, setNoteState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [editingContact, setEditingContact] = useState<SaveContactInput | null>(null)
+  const [draftNote, setDraftNote] = useState<{ email: string; text: string } | null>(null)
+  const [legacyNote, setLegacyNote] = useState<{ key: string; text: string } | null>(null)
+  const [noteStatus, setNoteStatus] = useState<{ email: string; state: 'saving' | 'saved' | 'error' } | null>(null)
 
   const senderEmail = selectedMessageDetail?.fromAddr ?? ''
   // Settings keys are capped at 100 chars by the main process.
   const noteKey = `contact_note:${senderEmail.toLowerCase()}`.slice(0, 100)
+  const contact = contacts.find((entry) => entry.email.toLowerCase() === senderEmail.toLowerCase())
+  const hasContact = Boolean(contact)
+  const savedNote = contact?.notes ?? (legacyNote?.key === noteKey ? legacyNote.text : '')
+  const note = draftNote?.email === senderEmail ? draftNote.text : savedNote
+  const noteState = noteStatus?.email === senderEmail ? noteStatus.state : 'idle'
+
+  useEffect(() => { void loadContacts() }, [loadContacts])
 
   // Keep list + reader usable: the panel never takes more than window − 480px.
   const getDynamicMaxWidth = useCallback(() => Math.max(MIN_DOSSIER_WIDTH, Math.min(MAX_DOSSIER_WIDTH, window.innerWidth - 480)), [])
@@ -74,25 +88,23 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
   }, [width, onWidthChange, getDynamicMaxWidth])
 
   useEffect(() => {
-    if (!senderEmail) return
+    if (!senderEmail || hasContact) return
     let cancelled = false
-    setNoteState('idle')
     window.mailapp.settings
       .get(noteKey)
       .then((v) => {
         if (cancelled) return
-        setNote(v ?? '')
-        setSavedNote(v ?? '')
+        setLegacyNote({ key: noteKey, text: v ?? '' })
       })
       .catch(() => {})
     return () => {
       cancelled = true
     }
-  }, [noteKey, senderEmail])
+  }, [hasContact, noteKey, senderEmail])
 
   if (!selectedMessageDetail) return null
 
-  const senderName = selectedMessageDetail.fromName || senderEmail.split('@')[0]
+  const senderName = (contact && contactName(contact)) || selectedMessageDetail.fromName || senderEmail.split('@')[0]
   const senderDomain = senderEmail.includes('@') ? senderEmail.split('@')[1] : ''
   const related = messages.filter((m) => m.id !== selectedMessageDetail.id && m.fromAddr.toLowerCase() === senderEmail.toLowerCase())
   const dates = [selectedMessageDetail, ...related].map((m) => (m.dateReceived ? new Date(m.dateReceived).getTime() : NaN)).filter((n) => !isNaN(n))
@@ -107,13 +119,29 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
     .toUpperCase()
 
   const saveNote = async (): Promise<void> => {
-    setNoteState('saving')
+    const text = note.trim()
+    setNoteStatus({ email: senderEmail, state: 'saving' })
     try {
-      await window.mailapp.settings.set(noteKey, note.trim())
-      setSavedNote(note.trim())
-      setNoteState('saved')
+      if (contact) {
+        const result = await saveContact({ ...contact, notes: text })
+        if (!result.ok) throw new Error(result.reason)
+      } else {
+        await window.mailapp.settings.set(noteKey, text)
+        setLegacyNote({ key: noteKey, text })
+      }
+      setDraftNote((current) => current === draftNote ? null : current)
+      setNoteStatus({ email: senderEmail, state: 'saved' })
     } catch {
-      setNoteState('error')
+      setNoteStatus({ email: senderEmail, state: 'error' })
+    }
+  }
+
+  const editSender = (): void => {
+    if (contact) {
+      setEditingContact({ ...contact, notes: note })
+    } else {
+      const [firstName = '', ...lastName] = selectedMessageDetail.fromName.trim().split(/\s+/)
+      setEditingContact({ ...emptyContact, firstName: firstName.slice(0, 100), lastName: lastName.join(' ').slice(0, 100), email: senderEmail, notes: note })
     }
   }
 
@@ -185,6 +213,11 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
             {t('contactDossier.action_meeting')}
           </Button>
         </div>
+        {isValidEmail(senderEmail) && contactsStatus === 'ready' && (
+          <Button size="sm" variant="ghost" icon={contact ? 'edit' : 'person_add'} className="mt-2" onClick={editSender}>
+            {t(contact ? 'contacts.edit' : 'contacts.save_sender')}
+          </Button>
+        )}
       </div>
 
       <dl className="px-5 py-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs border-b border-line">
@@ -234,9 +267,10 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
           rows={4}
           placeholder={t('contactDossier.notes_placeholder_input')}
           value={note}
+          disabled={noteState === 'saving'}
           onChange={(e) => {
-            setNote(e.target.value)
-            setNoteState('idle')
+            setDraftNote({ email: senderEmail, text: e.target.value })
+            setNoteStatus(null)
           }}
         />
         <div className="flex items-center justify-between mt-2">
@@ -248,6 +282,10 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
           </Button>
         </div>
       </section>
+      {editingContact && (
+        <ContactEditor initialContact={editingContact} onClose={() => setEditingContact(null)}
+          onSaved={() => setDraftNote((current) => current === draftNote ? null : current)} />
+      )}
     </aside>
   )
 }

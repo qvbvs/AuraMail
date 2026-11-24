@@ -6,12 +6,14 @@ import { IconButton } from './Button'
 export interface ModalProps {
   open: boolean
   onClose: () => void
+  onAfterClose?: () => void
   title?: React.ReactNode
   size?: 'sm' | 'md' | 'lg' | 'xl'
   children: React.ReactNode
   footer?: React.ReactNode
   headerExtra?: React.ReactNode
   closeOnBackdrop?: boolean
+  dismissible?: boolean
   ariaLabel?: string
   /** 'center' (domyślnie) — klasyczny dialog na środku. 'drawer-right' — panel
    * wysuwany z prawej krawędzi ekranu, na całą wysokość; dla treści, które nie są
@@ -20,6 +22,13 @@ export interface ModalProps {
 }
 
 const CLOSE_ANIMATION_MS = 130
+const FOCUSABLE = 'a[href], button, input, textarea, select, [tabindex], [contenteditable="true"]'
+
+function tabbableElements(dialog: HTMLElement): HTMLElement[] {
+  return Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) =>
+    el.tabIndex >= 0 && !el.matches(':disabled') && el.getClientRects().length > 0 && getComputedStyle(el).visibility === 'visible'
+  )
+}
 
 /** Wspólna powłoka modali aplikacji (design tokens z components.css: .modal-overlay/
  * .modal-content/...) — zamiast każdego okna dialogowego z osobna wymyślającego swój
@@ -29,12 +38,14 @@ const CLOSE_ANIMATION_MS = 130
 export function Modal({
   open,
   onClose,
+  onAfterClose,
   title,
   size = 'md',
   children,
   footer,
   headerExtra,
   closeOnBackdrop = true,
+  dismissible = true,
   ariaLabel,
   variant = 'center'
 }: ModalProps): JSX.Element | null {
@@ -43,14 +54,16 @@ export function Modal({
   const [closing, setClosing] = useState(false)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
+  const afterCloseRef = useRef(onAfterClose)
+  afterCloseRef.current = onAfterClose
 
   const requestClose = useCallback(() => {
-    if (closing) return
+    if (closing || !dismissible) return
     setClosing(true)
     closeTimerRef.current = setTimeout(() => {
       onClose()
     }, CLOSE_ANIMATION_MS)
-  }, [closing, onClose])
+  }, [closing, dismissible, onClose])
 
   useEffect(() => {
     if (open) {
@@ -73,30 +86,45 @@ export function Modal({
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prevOverflow
+      if (!contentRef.current) afterCloseRef.current?.()
     }
   }, [rendered])
 
   useEffect(() => {
     if (!rendered) return
     const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') {
+      if (e.defaultPrevented || e.isComposing || (e.key !== 'Escape' && e.key !== 'Tab')) return
+      const dialog = contentRef.current
+      const modals = document.querySelectorAll('[aria-modal="true"]')
+      if (!dialog || modals[modals.length - 1] !== dialog) return
+
+      if (e.key === 'Escape' && !e.repeat && dismissible) {
         e.preventDefault()
         requestClose()
+      }
+      if (e.key === 'Tab') {
+        const tabbable = tabbableElements(dialog)
+        const first = tabbable[0]
+        const last = tabbable[tabbable.length - 1]
+        const focus = document.activeElement
+        if (!first || !dialog.contains(focus) || focus === dialog || focus === (e.shiftKey ? first : last)) {
+          e.preventDefault()
+          const next = (e.shiftKey ? last : first) ?? dialog
+          next.focus()
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [rendered, requestClose])
+  }, [rendered, requestClose, dismissible])
 
   useEffect(() => {
-    if (rendered && !closing) {
-      // Autofocus pierwszego interaktywnego elementu — wygodne dla klawiatury, bez
-      // walki o dokładny "focus trap" (Esc + klik poza wystarcza do wyjścia).
-      const el = contentRef.current?.querySelector<HTMLElement>(
-        'input, textarea, select, button:not([data-modal-close-ignore])'
-      )
-      el?.focus()
-    }
+    const dialog = contentRef.current
+    if (!rendered || closing || !dialog || dialog.contains(document.activeElement)) return
+    const tabbable = tabbableElements(dialog)
+    const firstContentControl = tabbable.find((el) => !el.hasAttribute('data-modal-close-ignore'))
+    const initialFocus = firstContentControl ?? tabbable[0] ?? dialog
+    initialFocus.focus()
   }, [rendered, closing])
 
   if (!rendered) return null
@@ -110,6 +138,7 @@ export function Modal({
     >
       <div
         ref={contentRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel || (typeof title === 'string' ? title : undefined)}
@@ -123,7 +152,8 @@ export function Modal({
             {title && <h2 className="modal-title">{title}</h2>}
             <div className="flex items-center gap-2 flex-shrink-0">
               {headerExtra}
-              <IconButton icon="close" label={t('common.close')} shortcut="Esc" size="sm" onClick={requestClose} />
+              <IconButton icon="close" label={t('common.close')} shortcut="Esc" size="sm" onClick={requestClose} disabled={!dismissible}
+                data-modal-close-ignore />
             </div>
           </div>
         )}
