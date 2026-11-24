@@ -307,7 +307,7 @@ export function AddAccountDialog({ open, onClose }: Props): JSX.Element {
               <Icon name={serverOpen ? 'expand_more' : 'chevron_right'} className="text-ink-3" />
               {t('addAccount.server_settings')}
             </button>
-            <span className="flex-1 truncate text-xs text-ink-3">{!serverOpen && form.imapHost ? `${form.imapHost} · ${form.smtpHost}` : ''}</span>
+            <span className="flex-1 truncate text-xs text-ink-3">{!serverOpen && form.imapHost ? `${form.imapHost}, ${form.smtpHost}` : ''}</span>
             <label className="sr-only" htmlFor="account-preset">
               {t('addAccount.preset_label')}
             </label>

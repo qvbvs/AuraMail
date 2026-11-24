@@ -163,9 +163,9 @@ export function FilesDriveView({ onBackToMail, onOpenThread }: FilesDriveViewPro
       <header className="px-5 pt-3.5 pb-3 border-b border-line flex flex-col gap-3">
         <div className="flex items-center gap-3 flex-wrap">
           <IconButton icon="arrow_back" label={t('files.back_to_mail')} onClick={onBackToMail} className="md:hidden" />
-          <h1 className="font-serif text-xl text-ink">{t('files.title')}</h1>
+          <h1 className="font-bold tracking-[-0.02em] text-xl text-ink">{t('files.title')}</h1>
           <span className="text-xs text-ink-3 tabular-nums">
-            {t('files.stats_count', { count: files.length })} · {formatBytes(totalBytes)}
+            {t('files.stats_count', { count: files.length })}, {formatBytes(totalBytes)}
           </span>
           <span className="flex-1" />
           <label className="relative flex items-center w-64 max-sm:w-full">
@@ -215,7 +215,7 @@ export function FilesDriveView({ onBackToMail, onOpenThread }: FilesDriveViewPro
           ) : viewMode === 'table' ? (
             <table className="w-full text-sm">
               <thead className="sticky top-0 bg-panel/95 backdrop-blur-[2px] border-b border-line">
-                <tr className="text-left text-2xs uppercase tracking-wide text-ink-3">
+                <tr className="text-left text-xs text-ink-3">
                   <th className="font-medium pl-5 pr-2 py-2">{t('files.table_file')}</th>
                   <th className="font-medium px-2 py-2 max-md:hidden">{t('files.table_sender')}</th>
                   <th className="font-medium px-2 py-2 text-right">{t('files.table_size')}</th>
@@ -286,7 +286,7 @@ export function FilesDriveView({ onBackToMail, onOpenThread }: FilesDriveViewPro
                 <Icon name={FILTER_ICON[activeFile.kind]} className="!text-[32px] text-ink-3" />
                 <h2 className="mt-3 text-md font-medium text-ink break-words">{activeFile.filename}</h2>
                 <p className="text-xs text-ink-3 mt-0.5">
-                  {formatBytes(activeFile.sizeBytes)} · {activeFile.mimeType}
+                  {formatBytes(activeFile.sizeBytes)}, {activeFile.mimeType}
                 </p>
               </div>
               <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-xs">

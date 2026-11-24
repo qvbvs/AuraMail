@@ -72,7 +72,7 @@ export function SettingsView({ onBackToMail, onOpenAddAccount }: SettingsViewPro
           <Icon name="arrow_back" className="!text-[16px]" />
           {t('settings.back_to_mail_short')}
         </button>
-        <h1 className="hidden md:block font-serif text-2xl text-ink px-2 mb-4">{t('settings.title')}</h1>
+        <h1 className="hidden md:block font-bold tracking-[-0.02em] text-2xl text-ink px-2 mb-4">{t('settings.title')}</h1>
         {SECTIONS.map((s) => (
           <button
             key={s.id}
@@ -254,7 +254,7 @@ function AccountsSection({ onOpenAddAccount }: { onOpenAddAccount: () => void })
                       {acc.isDefault && <span className="chip">{t('settingsModal.default_badge')}</span>}
                     </span>
                     <span className="block text-xs text-ink-3 truncate">
-                      {acc.email} · <span className={ok ? 'text-ok' : 'text-warn'}>{ok ? t('settings.status_active') : t('settingsModal.status_warning')}</span>
+                      {acc.email}, <span className={ok ? 'text-ok' : 'text-warn'}>{ok ? t('settings.status_active') : t('settingsModal.status_warning')}</span>
                     </span>
                     {acc.lastError && <span className="block text-xs text-warn truncate">{acc.lastError}</span>}
                   </span>
@@ -718,9 +718,9 @@ function BandwidthBlock({ account }: { account: AccountSummary }): JSX.Element |
             <path d={path} fill="none" stroke="var(--ink-2)" strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
           <figcaption className="text-right flex-shrink-0">
-            <span className="block font-serif text-xl text-ink tabular-nums">{last !== null ? `${last.toFixed(0)} KB/s` : '—'}</span>
+            <span className="block font-bold tracking-[-0.02em] text-xl text-ink tabular-nums">{last !== null ? `${last.toFixed(0)} KB/s` : '—'}</span>
             <span className="block text-xs text-ink-3">
-              {t('settings.bandwidth_sent_label')} {formatBytes(total)} · {points.length} {t('settings.no_bandwidth_measurements')}
+              {t('settings.bandwidth_sent_label')} {formatBytes(total)}, {points.length} {t('settings.no_bandwidth_measurements')}
             </span>
           </figcaption>
         </figure>

@@ -62,7 +62,7 @@ function NavItem({ active, onClick, label, icon, count, countTone = 'quiet', tra
       <span className="flex-1 truncate">{label}</span>
       {trailing}
       {count !== undefined && count > 0 && (
-        <span className={`tabular-nums text-xs ${countTone === 'strong' ? 'font-semibold text-accent-ink' : 'text-ink-3'}`}>{count}</span>
+        <span className={`tabular-nums text-xs ${countTone === 'strong' ? 'min-w-[20px] h-[18px] px-1.5 rounded-full bg-flag text-on-flag font-semibold text-center leading-[18px]' : 'text-ink-3'}`}>{count}</span>
       )}
     </button>
   )
@@ -132,11 +132,11 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
         <button
           type="button"
           onClick={onOpenCompose}
-          className="w-full h-9 flex items-center gap-2 pl-3 pr-2 rounded bg-ink text-canvas text-sm font-medium hover:opacity-90 transition-opacity"
+          className="w-full h-9 flex items-center gap-2 pl-3 pr-2 rounded-md bg-flag text-on-flag text-sm font-semibold hover:bg-flag-hover transition-colors shadow-1"
         >
           <Icon name="edit" />
           <span className="flex-1 text-left">{t('sidebar.compose')}</span>
-          <kbd className="kbd !bg-transparent !text-canvas/70 !border-canvas/30">C</kbd>
+          <kbd className="kbd !bg-transparent !text-on-flag/70 !border-on-flag/25">C</kbd>
         </button>
       </div>
 
@@ -202,7 +202,6 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
                 icon="folder"
                 label={f.displayName}
                 count={f.unreadCount}
-                countTone="strong"
                 onClick={() => {
                   goMail()
                   selectFolder(f.id)
@@ -250,7 +249,6 @@ export function Sidebar({ onOpenCompose, onOpenStats, currentView = 'mail', onNa
                 icon={<span className="w-[18px] flex justify-center"><span className="chip-dot" style={{ backgroundColor: lbl.color }} /></span>}
                 label={getLocalizedLabelName(lbl, t)}
                 count={lbl.unreadCount}
-                countTone="strong"
                 onClick={() => {
                   goMail()
                   selectLabel(lbl.id)

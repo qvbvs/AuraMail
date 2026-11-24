@@ -27,12 +27,14 @@ module.exports = {
         'danger-soft': v('danger-soft'),
         warn: v('warn'),
         'warn-soft': v('warn-soft'),
+        flag: v('flag'),
+        'flag-hover': v('flag-hover'),
+        'on-flag': v('on-flag'),
         ok: v('ok'),
         'ok-soft': v('ok-soft')
       },
       fontFamily: {
         sans: v('font-sans'),
-        serif: v('font-serif'),
         mono: v('font-mono')
       },
       fontSize: {
@@ -42,8 +44,8 @@ module.exports = {
         md: ['14px', { lineHeight: '20px' }],
         base: ['15px', { lineHeight: '24px' }],
         lg: ['16px', { lineHeight: '22px' }],
-        xl: ['20px', { lineHeight: '26px', letterSpacing: '-0.01em' }],
-        '2xl': ['26px', { lineHeight: '32px', letterSpacing: '-0.015em' }]
+        xl: ['21px', { lineHeight: '26px', letterSpacing: '-0.02em' }],
+        '2xl': ['28px', { lineHeight: '32px', letterSpacing: '-0.025em' }]
       },
       borderRadius: {
         sm: v('r-1'),

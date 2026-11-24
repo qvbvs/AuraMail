@@ -138,10 +138,10 @@ export function ThreadDossierView({ onBackToList, onOpenCompose }: ThreadDossier
 
         <div className="flex-1 overflow-y-auto">
           <header className="px-8 pt-6 pb-4 max-w-[900px]">
-            <h1 className="font-serif text-2xl font-medium text-ink text-pretty selectable">{detail.subject || t('reader.no_subject')}</h1>
+            <h1 className="font-bold tracking-[-0.02em] text-2xl text-ink text-pretty selectable">{detail.subject || t('reader.no_subject')}</h1>
             <p className="mt-1 text-xs text-ink-3">
               {t('threadDossier.messages_count', { count: thread.length })}
-              {detail.threadCount > thread.length && ` · ${t('threadDossier.partial_note', { total: detail.threadCount })}`}
+              {detail.threadCount > thread.length && `, ${t('threadDossier.partial_note', { total: detail.threadCount })}`}
             </p>
           </header>
 

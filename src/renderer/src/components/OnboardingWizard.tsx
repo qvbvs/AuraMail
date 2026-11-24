@@ -4,6 +4,7 @@ import { useAccountsStore } from '../state/accounts-store'
 import { playNotificationSound } from '../utils/sound'
 import { useTranslation, type Language } from '../i18n'
 import { WindowControls } from './WindowControls'
+import { Brand } from './Brand'
 import { Button, Icon } from './ui/Button'
 import { Field, SwitchRow } from './ui/Field'
 import { ACCOUNT_COLORS } from './AddAccountDialog'
@@ -200,10 +201,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
   return (
     <div className="w-screen h-screen flex flex-col bg-canvas">
       <div className="app-drag-region h-[var(--titlebar-h)] flex items-center justify-between pl-4 flex-shrink-0">
-        <span className="flex items-baseline gap-1">
-          <span className="font-serif text-[17px] font-semibold text-ink">Aura</span>
-          <span className="font-serif text-[17px] italic text-ink-2 -ml-0.5">mail</span>
-        </span>
+        <Brand />
         <div className="flex items-center h-full app-no-drag">
           <div className="segmented mr-3" role="group" aria-label={t('settings.language.title')}>
             {(['pl', 'en'] as Language[]).map((l) => (
@@ -219,7 +217,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
       <div className="flex-1 min-h-0 flex max-md:flex-col">
         {/* Intro + progress */}
         <aside className="w-[340px] max-md:w-full flex-shrink-0 px-10 max-md:px-6 pt-10 max-md:pt-4 pb-6 flex flex-col">
-          <h1 className="font-serif text-[34px] leading-[1.1] text-ink max-md:text-2xl">{t('onboarding.welcome.title')}</h1>
+          <h1 className="font-bold tracking-[-0.02em] text-[34px] leading-[1.1] text-ink max-md:text-2xl">{t('onboarding.welcome.title')}</h1>
           <p className="mt-3 text-sm text-ink-2 leading-relaxed max-md:hidden">{t('onboarding.welcome.desc')}</p>
           <ol className="mt-10 max-md:mt-4 flex md:flex-col gap-1 max-md:gap-4" aria-label={t('onboarding.title')}>
             {steps.map(({ n, key }) => {
@@ -244,14 +242,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
               )
             })}
           </ol>
-          <ul className="mt-auto pt-8 flex flex-col gap-3 text-xs text-ink-3 max-md:hidden">
-            {[1, 2, 3].map((i) => (
-              <li key={i}>
-                <span className="block text-ink-2 font-medium">{t(`onboarding.welcome.feature${i}.title`)}</span>
-                {t(`onboarding.welcome.feature${i}.desc`)}
-              </li>
-            ))}
-          </ul>
         </aside>
 
         {/* Step content on the paper sheet */}
@@ -266,7 +256,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
                 }}
               >
                 <header>
-                  <h2 className="font-serif text-2xl text-ink">{t('onboarding.account.title')}</h2>
+                  <h2 className="font-bold tracking-[-0.02em] text-2xl text-ink">{t('onboarding.account.title')}</h2>
                   <p className="mt-1 text-sm text-ink-2">{t('onboarding.account.subtitle')}</p>
                 </header>
 
@@ -358,7 +348,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
                     {t('addAccount.test_connection')}
                   </Button>
                   <span className="flex-1" />
-                  <Button type="submit" variant="primary" size="lg" loading={submitting} iconRight="arrow_forward">
+                  <Button type="submit" variant="primary" size="lg" loading={submitting}>
                     {t('onboarding.account.save_continue')}
                   </Button>
                 </div>
@@ -368,7 +358,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
             {step === 2 && (
               <div className="flex flex-col">
                 <header className="mb-2">
-                  <h2 className="font-serif text-2xl text-ink">{t('onboarding.step.preferences')}</h2>
+                  <h2 className="font-bold tracking-[-0.02em] text-2xl text-ink">{t('onboarding.step.preferences')}</h2>
                   <p className="mt-1 text-sm text-ink-2">{t('onboarding.preferences.subtitle')}</p>
                 </header>
 
@@ -425,7 +415,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
                     {t('common.back')}
                   </Button>
                   <span className="flex-1" />
-                  <Button variant="primary" size="lg" iconRight="arrow_forward" disabled={!hasAccount} onClick={() => setStep(3)}>
+                  <Button variant="primary" size="lg" disabled={!hasAccount} onClick={() => setStep(3)}>
                     {t('common.next')}
                   </Button>
                 </div>
@@ -435,7 +425,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
             {step === 3 && (
               <div className="flex flex-col gap-6">
                 <header>
-                  <h2 className="font-serif text-2xl text-ink">{t('onboarding.done.title')}</h2>
+                  <h2 className="font-bold tracking-[-0.02em] text-2xl text-ink">{t('onboarding.done.title')}</h2>
                   <p className="mt-1 text-sm text-ink-2">{t('onboarding.done.subtitle')}</p>
                 </header>
                 <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 text-sm border-y border-line py-5">

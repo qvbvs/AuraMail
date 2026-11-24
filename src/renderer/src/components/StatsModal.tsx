@@ -56,7 +56,7 @@ export function StatsModal({ open, onClose }: StatsModalProps): JSX.Element {
         {figures.map(([label, value]) => (
           <div key={label} className="px-4 py-3.5 border-r border-b border-line">
             <dt className="text-xs text-ink-3">{label}</dt>
-            <dd className="mt-1 font-serif text-2xl text-ink tabular-nums">{value}</dd>
+            <dd className="mt-1 font-bold tracking-[-0.02em] text-2xl text-ink tabular-nums">{value}</dd>
           </div>
         ))}
       </dl>

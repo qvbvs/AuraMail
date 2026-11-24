@@ -233,7 +233,7 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
       <header className="px-4 pt-3.5 pb-2.5 border-b border-line">
         <div className="flex items-baseline gap-2 min-w-0">
           {selectedLabel && <span className="chip-dot self-center" style={{ backgroundColor: selectedLabel.color }} />}
-          <h1 className="font-serif text-xl font-medium text-ink truncate">{title}</h1>
+          <h1 className="font-bold tracking-[-0.02em] text-xl text-ink truncate">{title}</h1>
           <span className="text-xs text-ink-3 tabular-nums whitespace-nowrap">
             {searchQuery ? t('messageList.results_count', { count: filteredMessages.length }) : unreadCount > 0 ? t('messageList.unread_count', { count: unreadCount }) : messages.length}
           </span>
@@ -376,7 +376,7 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
                     }`}
                   >
                     {selected && <span className="absolute left-0 inset-y-0 w-[3px] bg-accent" aria-hidden="true" />}
-                    {!m.isRead && <span className="absolute left-3 top-[15px] w-[7px] h-[7px] rounded-full bg-accent" aria-label={t('messageList.props.status_unread')} />}
+                    {!m.isRead && <span className="absolute left-[11px] top-3 w-[5px] h-[18px] rounded-full bg-flag shadow-[0_0_0_1px_color-mix(in_srgb,var(--on-flag)_18%,transparent)]" role="img" aria-label={t('messageList.props.status_unread')} />}
 
                     <div className="flex items-baseline gap-2">
                       <span className={`flex-1 truncate text-sm ${m.isRead ? 'text-ink-2' : 'text-ink font-semibold'}`}>{sender}</span>

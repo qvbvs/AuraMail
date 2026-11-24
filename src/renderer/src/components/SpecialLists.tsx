@@ -57,7 +57,7 @@ export function SpecialLists(): JSX.Element {
   return (
     <div className="flex flex-col h-full min-h-0">
       <header className="px-4 pt-3.5 pb-3 border-b border-line flex items-baseline gap-2">
-        <h1 className="font-serif text-xl font-medium text-ink">{config.title}</h1>
+        <h1 className="font-bold tracking-[-0.02em] text-xl text-ink">{config.title}</h1>
         <span className="text-xs text-ink-3 tabular-nums">{config.count}</span>
       </header>
 

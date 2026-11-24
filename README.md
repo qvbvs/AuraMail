@@ -4,7 +4,7 @@
 
 **A private, local-first email client for the desktop.**
 
-[![Release](https://img.shields.io/github/v/release/qvbvs/auramail?style=flat-square&color=1f5c4c)](https://github.com/qvbvs/auramail/releases)
+[![Release](https://img.shields.io/github/v/release/qvbvs/auramail?style=flat-square&color=2442c9)](https://github.com/qvbvs/auramail/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-333333?style=flat-square)](#installation)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 
@@ -66,7 +66,7 @@ Main process  (Mail · SMTP · Sync · Calendar · Scheduler)
 |---|---|
 | Desktop | Electron 33 |
 | Language | TypeScript 5 |
-| UI | React 18 · Tailwind CSS · Tiptap · IBM Plex / Newsreader (bundled) |
+| UI | React 18 · Tailwind CSS · Tiptap · Schibsted Grotesk (bundled) |
 | Mail | IMAPFlow · Nodemailer · MailParser |
 | Storage | SQLite + SQLCipher · FTS5 |
 | Editor | Tiptap |

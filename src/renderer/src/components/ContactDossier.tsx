@@ -143,7 +143,7 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
             {initials}
           </span>
           <div className="min-w-0">
-            <p className="font-serif text-lg font-medium text-ink truncate">{senderName}</p>
+            <p className="font-bold tracking-[-0.02em] text-lg text-ink truncate">{senderName}</p>
             {senderDomain && (
               <button
                 type="button"

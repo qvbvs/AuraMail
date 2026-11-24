@@ -272,7 +272,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
 
       {/* Header */}
       <header className="px-8 pt-6 pb-4 flex-shrink-0 selectable">
-        <h1 className="font-serif text-2xl font-medium text-ink text-pretty">
+        <h1 className="font-bold tracking-[-0.02em] text-2xl text-ink text-pretty">
           {detail.subject || t('reader.no_subject')}
           {detail.isImportant && (
             <span className="chip !bg-warn-soft !text-warn align-middle ml-2 relative -top-0.5">
@@ -311,7 +311,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
             </div>
             <p className="text-xs text-ink-3 mt-0.5 truncate" title={[...recipients, ...cc].join(', ')}>
               {t('reader.to_prefix', { recipients: recipients.length ? recipients.join(', ') : t('reader.to_me') })}
-              {cc.length > 0 && ` · ${t('reader.cc_prefix', { recipients: cc.join(', ') })}`}
+              {cc.length > 0 && `; ${t('reader.cc_prefix', { recipients: cc.join(', ') })}`}
             </p>
           </div>
           <time className="text-xs text-ink-3 whitespace-nowrap pt-0.5" dateTime={detail.dateReceived ?? undefined} title={formatDate(detail.dateReceived)}>
@@ -335,7 +335,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
                     <span className="block truncate text-xs font-medium text-ink">{a.filename}</span>
                     <span className="block text-2xs text-ink-3">
                       {formatBytes(a.sizeBytes)}
-                      {a.localPath && ` · ${t('reader.attachment_saved_short')}`}
+                      {a.localPath && `, ${t('reader.attachment_saved_short')}`}
                     </span>
                   </span>
                   <Icon name={savingAttachment === a.id ? 'progress_activity' : a.localPath ? 'check' : 'download'} className={`!text-[16px] text-ink-3 group-hover:text-ink ${savingAttachment === a.id ? 'animate-spin' : ''}`} />

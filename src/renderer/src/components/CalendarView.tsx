@@ -177,7 +177,7 @@ export function CalendarView({ onBackToMail, onOpenCompose }: CalendarViewProps)
     <div className="flex-1 min-w-0 flex flex-col">
       <header className="flex items-center gap-3 flex-wrap px-5 py-2.5 border-b border-line">
         <IconButton icon="arrow_back" label={t('calendar.back_to_mail')} onClick={onBackToMail} className="md:hidden" />
-        <h1 className="font-serif text-xl text-ink first-letter:uppercase min-w-[12ch]">{period}</h1>
+        <h1 className="font-bold tracking-[-0.02em] text-xl text-ink first-letter:uppercase min-w-[12ch]">{period}</h1>
         <div className="flex items-center">
           <IconButton icon="chevron_left" label={t('calendar.prev')} onClick={() => step(-1)} />
           <Button size="sm" variant="ghost" onClick={() => {
@@ -273,7 +273,7 @@ export function CalendarView({ onBackToMail, onOpenCompose }: CalendarViewProps)
             <>
               <div className="grid grid-cols-7 border-b border-line" aria-hidden="true">
                 {dayNamesShort.map((d) => (
-                  <div key={d} className="px-2 py-1.5 text-2xs font-medium text-ink-3 uppercase">
+                  <div key={d} className="px-2 py-1.5 text-xs font-medium text-ink-3">
                     {d}
                   </div>
                 ))}
@@ -293,7 +293,7 @@ export function CalendarView({ onBackToMail, onOpenCompose }: CalendarViewProps)
                         <button
                           type="button"
                           onClick={() => setSelectedDay(d)}
-                          className={`w-6 h-6 rounded-full text-xs tabular-nums ${today ? 'bg-accent text-on-accent font-semibold' : inMonth ? 'text-ink hover:bg-hover' : 'text-ink-3'}`}
+                          className={`w-6 h-6 rounded-full text-xs tabular-nums ${today ? 'bg-flag text-on-flag font-semibold' : inMonth ? 'text-ink hover:bg-hover' : 'text-ink-3'}`}
                           aria-label={d.toLocaleDateString(locale, { day: 'numeric', month: 'long' })}
                         >
                           {d.getDate()}
@@ -321,8 +321,8 @@ export function CalendarView({ onBackToMail, onOpenCompose }: CalendarViewProps)
                 {columns.map((d) => (
                   <div key={dateKey(d)} className="px-2 pt-2 pb-1 border-l border-line">
                     <button type="button" onClick={() => setSelectedDay(d)} className="flex items-baseline gap-1.5">
-                      <span className="text-2xs uppercase text-ink-3">{dayNamesShort[(d.getDay() + 6) % 7]}</span>
-                      <span className={`text-lg tabular-nums ${isSameDay(d, now) ? 'text-accent-ink font-semibold' : 'text-ink'}`}>{d.getDate()}</span>
+                      <span className="text-xs text-ink-3">{dayNamesShort[(d.getDay() + 6) % 7]}</span>
+                      <span className={`text-lg tabular-nums ${isSameDay(d, now) ? 'px-1.5 rounded bg-flag text-on-flag font-semibold' : 'text-ink'}`}>{d.getDate()}</span>
                     </button>
                     <div className="mt-1 flex flex-col gap-0.5 min-h-[20px]">{eventsOn(sorted, d).filter((ev) => ev.allDay).map((ev) => chip(ev, true))}</div>
                   </div>

@@ -204,7 +204,7 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
       items: [
         ...scheduleOptions.map(([label, date], i) => ({
           key: `s${i}`,
-          label: `${label} · ${formatDate(date, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`,
+          label: `${label}, ${formatDate(date, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`,
           icon: 'schedule_send',
           onSelect: () => schedule(date)
         })),
@@ -254,7 +254,7 @@ export function ComposerPane({ onClose, initialTo = '', initialSubject = '', ini
       }}
     >
       <header className="h-11 flex-shrink-0 flex items-center gap-2 pl-5 pr-2 border-b border-line">
-        <h1 className="flex-1 font-serif text-lg font-medium text-ink truncate">{subject.trim() || t('composer.title')}</h1>
+        <h1 className="flex-1 font-bold tracking-[-0.02em] text-lg text-ink truncate">{subject.trim() || t('composer.title')}</h1>
         <IconButton icon="close" label={t('composer.close')} shortcut="Esc" onClick={requestClose} />
       </header>
 

@@ -5,6 +5,7 @@ import { useAccountsStore } from '../state/accounts-store'
 import { useSchedulerStore } from '../state/scheduler-store'
 import { useTranslation } from '../i18n'
 import { WindowControls } from './WindowControls'
+import { Brand } from './Brand'
 import { Icon, IconButton } from './ui/Button'
 
 interface TopbarProps {
@@ -65,7 +66,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
       title = activeFolder.displayName
       unread = activeFolder.unreadCount
     }
-    document.title = `${unread > 0 ? `(${unread}) ` : ''}${title} — AuraMail${activeAccount?.email ? ` · ${activeAccount.email}` : ''}`
+    document.title = `${unread > 0 ? `(${unread}) ` : ''}${title} — AuraMail${activeAccount?.email ? ` — ${activeAccount.email}` : ''}`
   }, [t, searchQuery, specialView, activeFolder, activeAccount?.email])
 
   return (
@@ -84,8 +85,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
           onClick={onToggleSidebar}
         />
         <button type="button" onClick={onGoHome} title={t('topbar.home_tooltip')} className="app-no-drag flex items-baseline gap-1 px-1.5 rounded hover:bg-hover h-7">
-          <span className="font-serif text-[17px] font-semibold tracking-tight text-ink">Aura</span>
-          <span className="font-serif text-[17px] italic text-ink-2 -ml-0.5">mail</span>
+          <Brand />
         </button>
       </div>
 
