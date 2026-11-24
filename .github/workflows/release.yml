@@ -37,7 +37,8 @@ jobs:
           - os: windows-2022
             target-name: Windows
             platform-flag: --win
-          - os: ubuntu-latest
+          # Pinned: electron-builder's bundled fpm 1.9.3 fails with rpmbuild on ubuntu-26.04 (ubuntu-latest since Nov 2026).
+          - os: ubuntu-24.04
             target-name: Linux
             platform-flag: --linux
 
