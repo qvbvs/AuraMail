@@ -22,13 +22,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-release:
-    name: Build & Release (${{ matrix.target-name }})
+  # Each platform only builds. Publishing from both matrix jobs raced to create the release, and
+  # electron-builder silently skips uploads to a release published more than 2 hours earlier,
+  # which is how v0.1.0 ended up without its Windows installer.
+  build:
+    name: Build (${{ matrix.target-name }})
     runs-on: ${{ matrix.os }}
     env:
       GYP_MSVS_VERSION: '2022'
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           - os: windows-2022
@@ -38,14 +41,9 @@ jobs:
             target-name: Linux
             platform-flag: --linux
 
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
@@ -84,37 +82,11 @@ jobs:
       - name: Build frontend & main bundles
         run: npx electron-vite build
 
-      - name: Package & Publish to GitHub Releases (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ("${{ github.event.inputs.draft }}" -eq "true") {
-            npx electron-builder --win --publish always --config.publish.releaseType=draft
-          } elseif ("${{ github.event.inputs.prerelease }}" -eq "true") {
-            npx electron-builder --win --publish always --config.publish.releaseType=prerelease
-          } else {
-            npx electron-builder --win --publish always
-          }
-
-      - name: Package & Publish to GitHub Releases (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ github.event.inputs.draft }}" = "true" ]; then
-            npx electron-builder --linux --publish always --config.publish.releaseType=draft
-          elif [ "${{ github.event.inputs.prerelease }}" = "true" ]; then
-            npx electron-builder --linux --publish always --config.publish.releaseType=prerelease
-          else
-            npx electron-builder --linux --publish always
-          fi
+      - name: Package
+        run: npx electron-builder ${{ matrix.platform-flag }} --publish never
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: auramail-${{ matrix.target-name }}
           path: |
@@ -124,4 +96,57 @@ jobs:
             dist/*.deb
             dist/*.rpm
             dist/latest*.yml
-          if-no-files-found: ignore
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFT: ${{ github.event.inputs.draft }}
+          PRERELEASE: ${{ github.event.inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          TAG="v${VERSION}"
+
+          # A pushed tag must match package.json, otherwise installers and latest*.yml carry the wrong version.
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "${GITHUB_REF_NAME}" != "${TAG}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match package.json version ${VERSION}."
+            exit 1
+          fi
+
+          # Never attach new builds to a release whose tag points at different code; bump the version instead.
+          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
+            TAG_SHA="$(git rev-list -n 1 "${TAG}")"
+            if [ "${TAG_SHA}" != "${GITHUB_SHA}" ]; then
+              echo "::error::${TAG} already points at ${TAG_SHA}, not ${GITHUB_SHA}. Bump the version in package.json."
+              exit 1
+            fi
+          fi
+
+          ls -la dist
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" dist/* --clobber
+          else
+            FLAGS=()
+            [ "${DRAFT:-false}" = "true" ] && FLAGS+=(--draft)
+            [ "${PRERELEASE:-false}" = "true" ] && FLAGS+=(--prerelease)
+            gh release create "${TAG}" dist/* --title "${VERSION}" --target "${GITHUB_SHA}" --generate-notes "${FLAGS[@]}"
+          fi
