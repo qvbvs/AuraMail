@@ -9,12 +9,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.2.0] - 2026-11-24
+
+Redesigned interface.
+
 ### Added
-- Complete internationalization (i18n) overhaul with 100% key symmetry across Polish and English dictionaries.
+- New neutral graphite design (dark and light), Geist typeface and fonts/icons bundled with the app instead of loaded from Google Fonts.
+- Keyboard triage in the message list (arrows, j/k, s, u, e, Delete), date grouping, filters and sort in the list header.
+- Attachments shown in the reader, working R/F shortcuts, quick reply that actually sends with a quoted original.
+- Composer: address validation, drag-and-drop attachments, link and quote tools, discard confirmation.
+- Real thread view built from the messages of the selected thread.
+- Calendar 24-hour time grid with overlapping events, all-day row and current-time line.
+- Settings for desktop, sound and preview notifications and background sync.
+- Complete internationalization (i18n) overhaul with full key symmetry across Polish and English dictionaries.
 - Localized system default labels (`Priority`, `Clients & Contracts`, `Finance & Invoices`, `Urgent`).
-- Dynamic main process localization for system tray menus and background desktop push notifications.
-- High-resolution preview visual assets generated with English test mock data.
-- Modernized, professional English documentation suite.
+- Dynamic main process localization for system tray menus and desktop notifications.
+
+### Changed
+- Settings reorganised into General, Accounts and Labels; onboarding shortened to three steps.
+- Release workflow builds each platform separately and publishes once.
+
+### Fixed
+- Recipients shown as "[object Object]" in the reader.
+- Password field in settings displayed the password in plain text.
+- Server test in settings always failed the login step.
+- Reader never appeared after selecting a message on narrow windows.
+- Missing Windows installer and latest.yml in the v0.1.0 release.
+
+### Removed
+- Placeholder UI that did nothing or showed fixed data (DKIM/TLS badges, demo thread view, mock AI button, fake signature, unused settings).
+- Unused FluentUI dependency.
 
 ---
 
