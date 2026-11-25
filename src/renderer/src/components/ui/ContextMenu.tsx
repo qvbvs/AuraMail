@@ -116,7 +116,7 @@ function MenuList({
       const subWidth = DEFAULT_MENU_WIDTH
       const subHeight = item.submenu.length * 32 + 16
 
-      // Poziomo: otwórz z prawej strony elementu rodzica, a jeśli brak miejsca — z lewej
+      // Poziomo: otwórz z prawej strony elementu rodzica, a jeśli brak miejsca - z lewej
       let subX = parentRect.right - 2
       if (subX + subWidth > winW - MENU_MARGIN) {
         subX = Math.max(MENU_MARGIN, parentRect.left - subWidth + 2)
@@ -253,7 +253,7 @@ function MenuList({
           // Portal osobno do document.body: rodzic ma `backdrop-filter`, co tworzy
           // nowy containing block dla `position: fixed` potomków (jak `transform`).
           // Zagnieżdżony fixed-div liczyłby się względem rodzica zamiast viewportu
-          // i wylatywał poza ekran — stąd submenu "nie pokazywało się".
+          // i wylatywał poza ekran - stąd submenu "nie pokazywało się".
           return createPortal(
             <MenuList
               items={parent.submenu}
@@ -273,7 +273,7 @@ function MenuList({
   )
 }
 
-/** Ogólne menu kontekstowe (PPM) — pozycjonowane w miejscu kliknięcia, przycięte do
+/** Ogólne menu kontekstowe (PPM) - pozycjonowane w miejscu kliknięcia, przycięte do
  * viewportu, nawigowalne klawiaturą (↑↓ Enter Esc, →/← dla podmenu), zamyka się przy
  * kliknięciu poza sobą, scrollu lub Esc. Renderowane portalem, żeby nie było ucinane
  * przez `overflow` rodzica. */

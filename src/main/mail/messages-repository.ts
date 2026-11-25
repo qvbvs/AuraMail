@@ -252,7 +252,7 @@ export function updateMessagePinned(db: Database.Database, id: string, pinned: b
   db.prepare('UPDATE messages SET is_pinned = ? WHERE id = ?').run(pinned ? 1 : 0, id)
 }
 
-/** Aktualizuje lokalizację wiadomości po realnym przeniesieniu IMAP (messageMove) —
+/** Aktualizuje lokalizację wiadomości po realnym przeniesieniu IMAP (messageMove) -
  * zachowuje ten sam lokalny `id` (i powiązane FK: attachments, follow_ups, itd). */
 export function updateMessageLocation(db: Database.Database, id: string, location: { folderId: string; uid: number }): void {
   db.prepare('UPDATE messages SET folder_id = ?, uid = ? WHERE id = ?').run(location.folderId, location.uid, id)
@@ -262,12 +262,12 @@ export function deleteMessageRow(db: Database.Database, id: string): void {
   db.prepare('DELETE FROM messages WHERE id = ?').run(id)
 }
 
-/** Pełnotekstowe wyszukiwanie po całej skrzynce konta przez FTS5 (temat/treść/nadawca) —
+/** Pełnotekstowe wyszukiwanie po całej skrzynce konta przez FTS5 (temat/treść/nadawca) -
  * niezależnie od tego, który folder jest aktualnie załadowany w rendererze. */
 export function searchMessages(db: Database.Database, accountId: string, query: string, limit = 30): MessageListItem[] {
   const trimmed = query.trim()
   if (!trimmed) return []
-  // Proste, bezpieczne dopasowanie prefiksowe każdego słowa — unika błędów składni FTS5
+  // Proste, bezpieczne dopasowanie prefiksowe każdego słowa - unika błędów składni FTS5
   // przy znakach specjalnych wpisywanych przez użytkownika w locie.
   const ftsQuery = trimmed
     .split(/\s+/)

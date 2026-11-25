@@ -56,7 +56,7 @@ export function markFollowUpNotified(db: Database.Database, id: string): void {
  * Wykrywanie odpowiedzi na wiadomość z aktywnym follow-upem (plan 7.15): jeśli nowo
  * zsynchronizowana wiadomość przychodząca wskazuje (In-Reply-To/References) na Message-ID
  * jednej z NASZYCH wysłanych wiadomości mających otwarty follow-up, oznacz go jako
- * rozwiązany — przypomnienie nie zostanie wysłane.
+ * rozwiązany - przypomnienie nie zostanie wysłane.
  */
 export function resolveFollowUpsForIncomingMessage(
   db: Database.Database,

@@ -146,7 +146,7 @@ export function AddAccountDialog({ open, onClose }: Props): JSX.Element {
             <li key={s.step} className="flex items-start gap-2 text-xs">
               <Icon name={s.ok ? 'check_circle' : 'cancel'} className={`!text-[16px] ${s.ok ? 'text-ok' : 'text-danger'}`} />
               <span className="text-ink-2">
-                <span className="text-ink font-medium">{STEP_LABELS[s.step]}</span> — {s.message}
+                <span className="text-ink font-medium">{STEP_LABELS[s.step]}</span>: {s.message}
               </span>
             </li>
           ))}

@@ -4,11 +4,11 @@
 // Powód istnienia tego skryptu: oficjalny build Node.js 24 dla Windows jest kompilowany
 // Clangiem (process.config.variables.clang === 1), więc node-gyp generuje projekty MSBuild
 // pod toolset ClangCL. Jednocześnie Node 24 ma włączone node_with_ltcg=true, co node-gyp's
-// addon.gypi tłumaczy na WholeProgramOptimization + flagę /LTCG:INCREMENTAL dla librariana —
+// addon.gypi tłumaczy na WholeProgramOptimization + flagę /LTCG:INCREMENTAL dla librariana -
 // flagę, której llvm-lib.exe (librarian dostarczany z ClangCL) nie obsługuje, przez co link
 // się wywala (MSB6006 / "no such file or directory" na /LTCG:INCREMENTAL).
 //
-// To niedopasowanie leży w node-gyp/paczkach, nie w tym projekcie — jak tylko ekosystem
+// To niedopasowanie leży w node-gyp/paczkach, nie w tym projekcie - jak tylko ekosystem
 // się dostosuje do Node 24 na Windows, ten skrypt stanie się zbędny.
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -16,7 +16,7 @@ import { join } from 'node:path'
 
 const electronVersion = JSON.parse(readFileSync(join('node_modules', 'electron', 'package.json'), 'utf8')).version
 
-// Oba moduły muszą być budowane pod nagłówki/ABI konkretnej wersji Electrona, nie hosta —
+// Oba moduły muszą być budowane pod nagłówki/ABI konkretnej wersji Electrona, nie hosta -
 // Node sprawdza NODE_MODULE_VERSION przy dlopen niezależnie od tego, czy addon używa N-API
 // wewnętrznie, więc moduł zbudowany pod Node 24 (NODE_MODULE_VERSION 137) nie wczyta się
 // w Electronie (NODE_MODULE_VERSION 130) i odwrotnie.
@@ -78,4 +78,4 @@ for (const { name: pkg, target } of PACKAGES) {
   })
 }
 
-console.log('\nGotowe — natywne moduły skompilowane.')
+console.log('\nGotowe, natywne moduły skompilowane.')

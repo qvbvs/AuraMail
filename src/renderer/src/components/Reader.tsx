@@ -357,7 +357,7 @@ export function Reader({ onReply, onForward, onBack, isMobile, onToggleDossier, 
         <MailBody html={detail.bodyHtml} plain={detail.bodyPlain} allowRemoteImages={allowRemoteImages} title={t('reader.iframe_title')} />
       </div>
 
-      {/* Quick reply — sends for real; "open in editor" keeps the typed text. */}
+      {/* Quick reply - sends for real; "open in editor" keeps the typed text. */}
       <form
         className="flex-shrink-0 border-t border-line px-4 py-3 print:hidden"
         onSubmit={(e) => {

@@ -11,7 +11,7 @@ export interface RecordBandwidthInput {
 }
 
 /** Zapisuje realny transfer sieciowy (rozmiar pobranych/wysłanych bajtów IMAP/SMTP,
- * zmierzony czas trwania) — źródło danych dla wykresu przepustowości w Ustawieniach. */
+ * zmierzony czas trwania) - źródło danych dla wykresu przepustowości w Ustawieniach. */
 export function recordBandwidth(db: Database.Database, input: RecordBandwidthInput): void {
   if (input.bytesTransferred <= 0) return
   db.prepare(

@@ -11,7 +11,7 @@ import {
 } from './messages-repository'
 
 /** Ustawia realne flagi IMAP (\Seen/\Flagged) na serwerze i dopiero po sukcesie
- * aktualizuje lokalną bazę — inaczej kolejny sync nadpisałby zmianę z powrotem
+ * aktualizuje lokalną bazę - inaczej kolejny sync nadpisałby zmianę z powrotem
  * (upsertMessageHeader odczytuje flagi z serwera dla istniejących wiadomości). */
 export async function setMessageFlags(db: Database.Database, messageId: string, flags: SetMessageFlagsInput): Promise<void> {
   const ref = getMessageFullRef(db, messageId)
@@ -66,7 +66,7 @@ export async function moveMessage(db: Database.Database, messageId: string, dest
     }
 
     if (newUid === null && ref.messageIdHeader) {
-      // Serwer nie wspiera UIDPLUS (brak uidMap) — odnajdź realny nowy UID w folderze
+      // Serwer nie wspiera UIDPLUS (brak uidMap) - odnajdź realny nowy UID w folderze
       // docelowym po nagłówku Message-ID zamiast zgadywać.
       const destLock = await client.getMailboxLock(destFolder.imapPath)
       try {
@@ -88,8 +88,8 @@ export async function moveMessage(db: Database.Database, messageId: string, dest
   recalculateUnreadCount(db, destFolderId)
 }
 
-/** "Usuń": jeśli wiadomość nie jest w Koszu — realny IMAP move do Kosza (odwracalne,
- * standardowe zachowanie klienta pocztowego). Jeśli już jest w Koszu — trwałe usunięcie
+/** "Usuń": jeśli wiadomość nie jest w Koszu - realny IMAP move do Kosza (odwracalne,
+ * standardowe zachowanie klienta pocztowego). Jeśli już jest w Koszu - trwałe usunięcie
  * (IMAP \Deleted + expunge) i usunięcie lokalnego wiersza. */
 export async function deleteMessagePermanently(db: Database.Database, messageId: string): Promise<void> {
   const ref = getMessageFullRef(db, messageId)

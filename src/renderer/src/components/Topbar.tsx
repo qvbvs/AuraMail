@@ -56,7 +56,7 @@ export function Topbar({ onToggleSidebar, sidebarCollapsed, onOpenCommandPalette
       title = activeFolder.displayName
       unread = activeFolder.unreadCount
     }
-    document.title = `${unread > 0 ? `(${unread}) ` : ''}${title} — AuraMail${activeAccount?.email ? ` — ${activeAccount.email}` : ''}`
+    document.title = `${unread > 0 ? `(${unread}) ` : ''}${title} - AuraMail${activeAccount?.email ? ` - ${activeAccount.email}` : ''}`
   }, [t, searchQuery, specialView, activeFolder, activeAccount?.email])
 
   return (

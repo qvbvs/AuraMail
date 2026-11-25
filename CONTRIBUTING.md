@@ -6,7 +6,7 @@ Thank you for your interest in contributing to AuraMail! This document outlines 
 
 ## Before You Begin
 
-- Please review [ARCHITECTURE.md](./ARCHITECTURE.md) — it explains the Electron process model, IPC contract, synchronization engine, and SQLite schema.
+- Please review [ARCHITECTURE.md](./ARCHITECTURE.md). It explains the Electron process model, IPC contract, synchronization engine, and SQLite schema.
 - AuraMail supports **Windows 10/11** and **Linux** (Ubuntu, Debian, Fedora, Arch Linux, etc.). Please ensure any code changes maintain cross-platform compatibility and keep native dependencies portable.
 
 ---
@@ -16,7 +16,7 @@ Thank you for your interest in contributing to AuraMail! This document outlines 
 - **Node.js 24.x** (LTS recommended).
 - **Git**.
 - **C/C++ Build Environment & Secret Service**:
-  - **Windows**: Windows 10/11 with **Visual Studio Build Tools** ("Desktop development with C++" workload enabled) — required to compile native C++ addons (`better-sqlite3-multiple-ciphers` and `keytar`).
+  - **Windows**: Windows 10/11 with **Visual Studio Build Tools** ("Desktop development with C++" workload enabled), required to compile native C++ addons (`better-sqlite3-multiple-ciphers` and `keytar`).
   - **Linux**: Standard build tools and `libsecret` development headers:
     - **Debian / Ubuntu / Mint / Pop!_OS**: `sudo apt install build-essential libsecret-1-dev python3`
     - **Fedora / RHEL**: `sudo dnf install make gcc-c++ libsecret-devel python3`

@@ -157,7 +157,7 @@ export function CommandPalette({
               </span>
               <span className="block truncate text-xs text-ink-3">
                 {item.message.fromName || item.message.fromAddr}
-                {item.message.snippet ? ` — ${item.message.snippet}` : ''}
+                {item.message.snippet ? `: ${item.message.snippet}` : ''}
               </span>
             </span>
           </>

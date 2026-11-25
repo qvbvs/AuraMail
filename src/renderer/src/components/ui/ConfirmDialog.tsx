@@ -16,7 +16,7 @@ export interface ConfirmDialogProps {
 }
 
 /** Zastępuje natywne `window.confirm` (brzydkie, nie pasujące do designu, blokujące
- * cały proces renderera) spójnym modalem aplikacji — używane m.in. przy usuwaniu
+ * cały proces renderera) spójnym modalem aplikacji - używane m.in. przy usuwaniu
  * konta pocztowego i trwałym usuwaniu wiadomości z Kosza. */
 export function ConfirmDialog({
   open,

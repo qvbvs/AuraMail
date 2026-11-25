@@ -16,10 +16,10 @@ Electron divides the application into isolated process boundaries. AuraMail stri
 └─────────────────────────┘                                                     └──────────────────────────┘
 ```
 
-- **`src/main`** — The sole process with direct access to the filesystem, network sockets, SQLite database, and the OS Credential Manager. Hosts the IMAP engine, background synchronization worker, SMTP transport, background scheduler, system tray, and all registered IPC handlers.
-- **`src/preload`** — The single isolation boundary that bridges Node.js and the web execution context. Exposes narrow, strictly-typed methods to the renderer via `contextBridge.exposeInMainWorld`. The renderer has no `nodeIntegration` and cannot access `ipcRenderer` directly.
-- **`src/renderer`** — A pure React application. Operates without direct Node.js knowledge, communicating exclusively through `window.mailapp.*` (provided by the preload bridge).
-- **`src/shared`** — Code shared between both main and renderer processes: `ipc.ts` defines IPC channel tokens (`IPC.*`) alongside request/response TypeScript interfaces. Any data-layer schema modification begins here.
+- **`src/main`**: The sole process with direct access to the filesystem, network sockets, SQLite database, and the OS Credential Manager. Hosts the IMAP engine, background synchronization worker, SMTP transport, background scheduler, system tray, and all registered IPC handlers.
+- **`src/preload`**: The single isolation boundary that bridges Node.js and the web execution context. Exposes narrow, strictly-typed methods to the renderer via `contextBridge.exposeInMainWorld`. The renderer has no `nodeIntegration` and cannot access `ipcRenderer` directly.
+- **`src/renderer`**: A pure React application. Operates without direct Node.js knowledge, communicating exclusively through `window.mailapp.*` (provided by the preload bridge).
+- **`src/shared`**: Code shared between both main and renderer processes: `ipc.ts` defines IPC channel tokens (`IPC.*`) alongside request/response TypeScript interfaces. Any data-layer schema modification begins here.
 
 ### Window Hardening (`src/main/index.ts`)
 
@@ -36,9 +36,9 @@ Every `BrowserWindow` instance enforces rigorous security constraints:
 The standard architectural pattern for every main ↔ renderer interaction:
 
 1. **Channel Token & Type Definition** in `src/shared/ipc.ts` (e.g. `IPC.messagesSend`, `SendMessageInput`).
-2. **Main Handler Registration** in `src/main/ipc/index.ts` — Validates incoming payloads using Zod schemas, delegates execution to dedicated repositories/services in `src/main/mail|calendar|scheduler|...`, and returns a strongly-typed response.
-3. **Preload Bridge Method** in `src/preload/index.ts` — Exposes a dedicated typed method on the `mailapp` object invoking `ipcRenderer.invoke(IPC.xxx, ...)`. Raw channel strings are never visible to renderer code.
-4. **Zustand State Store** in `src/renderer/src/state/` — Invokes `window.mailapp.*` and holds reactive state for the UI components.
+2. **Main Handler Registration** in `src/main/ipc/index.ts`: Validates incoming payloads using Zod schemas, delegates execution to dedicated repositories/services in `src/main/mail|calendar|scheduler|...`, and returns a strongly-typed response.
+3. **Preload Bridge Method** in `src/preload/index.ts`: Exposes a dedicated typed method on the `mailapp` object invoking `ipcRenderer.invoke(IPC.xxx, ...)`. Raw channel strings are never visible to renderer code.
+4. **Zustand State Store** in `src/renderer/src/state/`: Invokes `window.mailapp.*` and holds reactive state for the UI components.
 
 Adding a cross-boundary feature always follows these four steps in sequential order.
 
@@ -95,9 +95,9 @@ For every account with IDLE enabled (`accounts.idle_enabled`), the `IdleManager`
 A periodic background scheduler (`tick()` every 30 seconds) evaluates whether an account's `sync_frequency_sec` interval (default 300s, minimum 60s) has elapsed, triggering full folder synchronization when due.
 
 The same scheduler loop processes time-sensitive background queues:
-- **`scheduled_messages`** — Sends queued emails whose `send_at` timestamp has arrived. Messages older than 24 hours (e.g. computer was turned off) are marked as `failed` to prevent accidental outdated delivery.
-- **`snoozed_messages`** — Wakes up snoozed emails by restoring them to their original mailbox and notifying the user.
-- **`follow_ups`** — Alerts the user when an expected response has not arrived within the specified time window.
+- **`scheduled_messages`**: Sends queued emails whose `send_at` timestamp has arrived. Messages older than 24 hours (e.g. computer was turned off) are marked as `failed` to prevent accidental outdated delivery.
+- **`snoozed_messages`**: Wakes up snoozed emails by restoring them to their original mailbox and notifying the user.
+- **`follow_ups`**: Alerts the user when an expected response has not arrived within the specified time window.
 
 ---
 

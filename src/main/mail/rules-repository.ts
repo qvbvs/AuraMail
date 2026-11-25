@@ -70,7 +70,7 @@ export function deleteRule(db: Database.Database, id: string): void {
   db.prepare('DELETE FROM rules WHERE id = ?').run(id)
 }
 
-/** Aktywne reguły "incoming" dla konta — używane przy syncu nowej poczty w INBOX. */
+/** Aktywne reguły "incoming" dla konta - używane przy syncu nowej poczty w INBOX. */
 export function listActiveIncomingRules(db: Database.Database, accountId: string): MailRule[] {
   const rows = db
     .prepare(`SELECT * FROM rules WHERE account_id = ? AND is_active = 1 AND applies_on = 'incoming' ORDER BY sort_order ASC`)

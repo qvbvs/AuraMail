@@ -398,7 +398,7 @@
   color: var(--ink-3);
 }
 
-/* Label / status chip — square-ish, quiet. */
+/* Label / status chip - square-ish, quiet. */
 .chip {
   display: inline-flex;
   align-items: center;

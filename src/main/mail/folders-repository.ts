@@ -45,7 +45,7 @@ export function findFolderByType(db: Database.Database, accountId: string, type:
     .get(accountId, type) as { id: string; imapPath: string } | undefined
 }
 
-/** Zgaduje typ folderu z SPECIAL-USE (RFC 6154) z fallbackiem po nazwie — patrz plan sekcja 7.7. */
+/** Zgaduje typ folderu z SPECIAL-USE (RFC 6154) z fallbackiem po nazwie - patrz plan sekcja 7.7. */
 export function guessFolderType(imapPath: string, specialUse: string | undefined): FolderType {
   const map: Record<string, FolderType> = {
     '\\Inbox': 'inbox',

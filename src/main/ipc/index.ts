@@ -367,7 +367,7 @@ export function registerIpcHandlers(): void {
   )
 
   ipcMain.on(IPC.connectionOnline, () => {
-    log.info('[ipc] odebrano connection:online — ponowne łączenie IDLE')
+    log.info('[ipc] odebrano connection:online - ponowne łączenie IDLE')
     idleManager.reconnectAll()
   })
 
@@ -694,7 +694,7 @@ export function registerIpcHandlers(): void {
   )
 
   // Linki z treści maili / kart kontaktów zawsze otwierają się w systemowej
-  // przeglądarce — nigdy wewnątrz okna aplikacji. Walidacja protokołu chroni
+  // przeglądarce - nigdy wewnątrz okna aplikacji. Walidacja protokołu chroni
   // przed nadużyciem (np. wywołaniem lokalnego pliku z treści maila).
   const ALLOWED_EXTERNAL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:'])
 

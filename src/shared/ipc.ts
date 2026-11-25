@@ -1,5 +1,5 @@
 // Kontrakt IPC main<->renderer. Renderer nigdy nie woła ipcRenderer.invoke bezpośrednio
-// z dowolnym kanałem — jedynie przez wąskie funkcje z contextBridge (patrz preload/index.ts).
+// z dowolnym kanałem - jedynie przez wąskie funkcje z contextBridge (patrz preload/index.ts).
 // Każdy kanał ma jawny typ żądania/odpowiedzi, walidowany po stronie main przez zod.
 
 export type AccountSecurity = 'none' | 'ssl' | 'starttls'
@@ -191,7 +191,7 @@ export interface SendMessageInput {
   subject: string
   bodyHtml: string
   attachments: ComposeAttachment[]
-  /** Godzin do przypomnienia, jeśli brak odpowiedzi (plan 7.15/20) — brak = bez follow-upu. */
+  /** Godzin do przypomnienia, jeśli brak odpowiedzi (plan 7.15/20) - brak = bez follow-upu. */
   followUpAfterHours?: number
 }
 
@@ -237,7 +237,7 @@ export interface AttachmentSummary {
   contentId: string | null
   downloadedAt: string | null
   localPath: string | null
-  /** Pozycja w drzewie MIME wiadomości — indeks do przekazania w messages:downloadAttachment. */
+  /** Pozycja w drzewie MIME wiadomości - indeks do przekazania w messages:downloadAttachment. */
   position: number
 }
 

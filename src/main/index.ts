@@ -13,7 +13,7 @@ import { startAppUpdater } from './system/app-updater'
 import log from 'electron-log'
 
 // Ustawione przez system, gdy proces wystartował z autostartu z opcją "zminimalizowana"
-// (patrz src/main/system/login-item.ts) — okno główne wtedy nie pokazuje się na starcie.
+// (patrz src/main/system/login-item.ts) - okno główne wtedy nie pokazuje się na starcie.
 const launchedMinimized = process.argv.includes(START_MINIMIZED_ARG)
 
 // Zabezpieczenie: gdy Electron uruchamiany jest bezpośrednio ze ścieżki do skryptu
@@ -41,7 +41,7 @@ function createWindow(): BrowserWindow {
     titleBarStyle: 'hidden',
     icon,
     webPreferences: {
-      // Hardening wg planu (sekcja 8.7) — bez wyjątków, na każdym oknie.
+      // Hardening wg planu (sekcja 8.7) - bez wyjątków, na każdym oknie.
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       sandbox: true,
@@ -77,7 +77,7 @@ function createWindow(): BrowserWindow {
     win.webContents.openDevTools({ mode: 'detach' })
   }
 
-  // Zamknięcie okna minimalizuje do tray zamiast kończyć proces (plan 7.10/7.13) —
+  // Zamknięcie okna minimalizuje do tray zamiast kończyć proces (plan 7.10/7.13) -
   // realne wyjście następuje tylko z menu tray ("Wyjdź") lub app.quit() z app-quit hooka.
   win.on('close', (event) => {
     if (!isQuitting) {
@@ -151,7 +151,7 @@ if (!gotSingleInstanceLock) {
     idleManager.start(getDb())
 
     powerMonitor.on('resume', () => {
-      log.info('[powerMonitor] powrót z uśpienia — wznawianie IDLE')
+      log.info('[powerMonitor] powrót z uśpienia - wznawianie IDLE')
       idleManager.reconnectAll()
     })
 
@@ -179,10 +179,10 @@ if (!gotSingleInstanceLock) {
     closeDb()
   })
 
-  // Windows/Linux: nie kończ procesu przy zamknięciu ostatniego okna — aplikacja żyje w tray.
+  // Windows/Linux: nie kończ procesu przy zamknięciu ostatniego okna - aplikacja żyje w tray.
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
-      // celowo nic — tray utrzymuje proces przy życiu (7.13)
+      // celowo nic - tray utrzymuje proces przy życiu (7.13)
     }
   })
 }

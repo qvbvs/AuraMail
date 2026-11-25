@@ -203,7 +203,7 @@ async function doSyncAccount(db: Database.Database, accountId: string): Promise<
       durationMs: Date.now() - syncStartedAt
     })
 
-    // Reguły filtrowania (Ustawienia → Filtry) — stosowane dopiero po zwolnieniu blokad
+    // Reguły filtrowania (Ustawienia → Filtry) - stosowane dopiero po zwolnieniu blokad
     // folderów przez połączenie synchronizujące; każde przeniesienie używa własnego,
     // krótkotrwałego połączenia IMAP (message-actions.moveMessage).
     if (newIncoming.length > 0) {
@@ -229,7 +229,7 @@ async function doSyncAccount(db: Database.Database, accountId: string): Promise<
     try {
       await client.logout()
     } catch {
-      // połączenie mogło już paść — nic do zrobienia
+      // połączenie mogło już paść - nic do zrobienia
     }
   }
 }

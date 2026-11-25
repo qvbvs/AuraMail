@@ -72,7 +72,7 @@ async function appendToSentFolder(
 
 /**
  * Wysyła wiadomość przez SMTP, archiwizuje dokładnie ten sam surowy MIME w Sent (plan 7.11/9.1)
- * i od razu tworzy lokalny wpis w `messages` dla tej kopii — bez czekania na kolejny sync —
+ * i od razu tworzy lokalny wpis w `messages` dla tej kopii - bez czekania na kolejny sync -
  * żeby ewentualny follow-up (patrz 7.15) miał do czego się odnieść natychmiast.
  */
 export async function sendMessage(db: Database.Database, input: SendMessageInput): Promise<void> {
@@ -97,7 +97,7 @@ export async function sendMessage(db: Database.Database, input: SendMessageInput
   })
 
   const appended = await appendToSentFolder(db, input.accountId, info, raw).catch(() => null)
-  if (!appended) return // wysyłka OK — brak zapisu w Sent nadrobi kolejny sync, nie jest to błąd krytyczny
+  if (!appended) return // wysyłka OK - brak zapisu w Sent nadrobi kolejny sync, nie jest to błąd krytyczny
 
   const now = new Date().toISOString()
   const threadId = resolveThreadId(db, {

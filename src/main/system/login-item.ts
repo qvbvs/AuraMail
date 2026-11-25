@@ -3,7 +3,7 @@ import type Database from 'better-sqlite3-multiple-ciphers'
 import type { LoginItemPrefs } from '@shared/ipc'
 import { getSetting, setSetting } from '../settings/settings-repository'
 
-// Argument rozpoznawany przy starcie procesu uruchomionego przez system (autostart) —
+// Argument rozpoznawany przy starcie procesu uruchomionego przez system (autostart) -
 // gdy obecny, okno główne nie jest pokazywane i aplikacja zostaje wyłącznie w tray'u.
 export const START_MINIMIZED_ARG = '--start-minimized'
 
@@ -24,7 +24,7 @@ export function applyLoginItemPrefs(db: Database.Database, prefs: LoginItemPrefs
 
   app.setLoginItemSettings({
     openAtLogin: prefs.openAtLogin,
-    // 'openAsHidden' działa tylko na macOS — na Windows/Linux ukrycie okna
+    // 'openAsHidden' działa tylko na macOS - na Windows/Linux ukrycie okna
     // realizujemy sami po stronie renderera przez flagę startową w `args`.
     openAsHidden: startHidden,
     path: process.execPath,
@@ -32,7 +32,7 @@ export function applyLoginItemPrefs(db: Database.Database, prefs: LoginItemPrefs
   })
 }
 
-// Ponownie stosuje zapisaną preferencję na starcie aplikacji — potrzebne m.in. po
+// Ponownie stosuje zapisaną preferencję na starcie aplikacji - potrzebne m.in. po
 // aktualizacji, gdy `process.execPath` mógł się zmienić (instalator zapisuje nową ścieżkę).
 export function syncLoginItemSettings(db: Database.Database): void {
   applyLoginItemPrefs(db, getLoginItemPrefs(db))

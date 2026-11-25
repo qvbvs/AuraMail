@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Jednorazowa weryfikacja end-to-end przeciw lokalnemu serwerowi GreenMail
 // (docker: greenmail-test, IMAP :3143 / SMTP :3025, testuser@localhost / testpass, bez TLS).
-// Nie jest to część stałego zestawu testów — ad-hoc dowód, że warstwa IMAP/SMTP
+// Nie jest to część stałego zestawu testów - ad-hoc dowód, że warstwa IMAP/SMTP
 // faktycznie działa (dodanie konta -> sync -> wysyłka -> ponowny sync widzi nową wiadomość).
 import { _electron as electron } from 'playwright'
 import { join } from 'node:path'
@@ -10,14 +10,14 @@ const electronExe = join(process.cwd(), 'node_modules', 'electron', 'dist', 'ele
 const mainEntry = join(process.cwd(), 'out', 'main', 'index.js')
 
 function log(step, ok, extra = '') {
-  console.log(`${ok ? '✓' : '✗'} ${step}${extra ? ' — ' + extra : ''}`)
+  console.log(`${ok ? '✓' : '✗'} ${step}${extra ? ': ' + extra : ''}`)
   if (!ok) process.exitCode = 1
 }
 
 const app = await electron.launch({ executablePath: electronExe, args: [mainEntry] })
 
 // is.dev (z @electron-toolkit/utils) == !app.isPackaged, więc uruchomione poza
-// electron-builderem zawsze otwiera DevTools w osobnym oknie — trzeba je odróżnić
+// electron-builderem zawsze otwiera DevTools w osobnym oknie - trzeba je odróżnić
 // od właściwego okna renderera po URL, bo Playwright's firstWindow() bywa losowe.
 let win
 for (let i = 0; i < 20; i++) {
@@ -31,7 +31,7 @@ win.on('console', (msg) => console.log('PAGE LOG:', msg.text()))
 win.on('pageerror', (err) => console.log('PAGE ERROR:', err))
 await win.waitForLoadState('domcontentloaded')
 
-// GreenMail (auth.disabled) akceptuje dowolny login i tworzy skrzynkę dynamicznie —
+// GreenMail (auth.disabled) akceptuje dowolny login i tworzy skrzynkę dynamicznie -
 // unikalny adres per uruchomienie, żeby nie trzeba było czyścić userData między testami.
 const runId = Date.now()
 const testEmail = `e2e-${runId}@localhost`
@@ -124,7 +124,7 @@ try {
   await win.screenshot({ path: 'scripts/e2e-scheduled-view.png' }).catch(() => {})
   log('Zaplanowana wiadomość widoczna na liście "Zaplanowane"', (await win.locator('text=E2E scheduled message').count()) > 0)
 
-  // Scheduler tick co 30s — czekamy aż wyśle (do 40s), potem sprawdzamy że zniknęła z listy.
+  // Scheduler tick co 30s - czekamy aż wyśle (do 40s), potem sprawdzamy że zniknęła z listy.
   await win.waitForTimeout(40_000)
   await win.locator('text=Zaplanowane').click()
   await win.waitForTimeout(500)

@@ -28,7 +28,7 @@ function Bar({ label, value, total }: { label: string; value: number; total: num
   )
 }
 
-/** Snapshot of the currently loaded list plus scheduling queues — a drawer, not a blocking dialog. */
+/** Snapshot of the currently loaded list plus scheduling queues - a drawer, not a blocking dialog. */
 export function StatsModal({ open, onClose }: StatsModalProps): JSX.Element {
   const { t } = useTranslation()
   const { accounts } = useAccountsStore()

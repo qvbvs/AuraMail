@@ -8,7 +8,7 @@ import { fetchMessageSource } from './sync-engine'
 /**
  * Leniwe pobranie treści wiadomości (plan sekcja 5/9: metadata przy sync nagłówków,
  * treść na żądanie). Sanityzacja HTML przed renderem odbywa się w rendererze (DOMPurify +
- * sandboxed iframe, patrz Reader.tsx) — tu tylko surowy, sparsowany HTML/plain z MIME.
+ * sandboxed iframe, patrz Reader.tsx) - tu tylko surowy, sparsowany HTML/plain z MIME.
  */
 export async function getOrFetchMessageBody(db: Database.Database, messageId: string): Promise<MessageDetail> {
   const existing = getMessageDetail(db, messageId)

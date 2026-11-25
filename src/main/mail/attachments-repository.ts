@@ -12,7 +12,7 @@ export interface ExtractedAttachment {
 }
 
 /** Rekurencyjnie schodzi po drzewie MIME (bodyStructure z IMAP FETCH) i zbiera
- * węzły będące załącznikami lub obrazami inline — bez pobierania treści wiadomości. */
+ * węzły będące załącznikami lub obrazami inline - bez pobierania treści wiadomości. */
 export function extractAttachmentsFromBodyStructure(node: MessageStructureObject | undefined): ExtractedAttachment[] {
   if (!node) return []
   const result: ExtractedAttachment[] = []
@@ -82,7 +82,7 @@ interface AttachmentWithMessageRow {
   subject: string
 }
 
-/** Lista wszystkich niewbudowanych (nie-inline) załączników dla konta — realne dane z lokalnej bazy,
+/** Lista wszystkich niewbudowanych (nie-inline) załączników dla konta - realne dane z lokalnej bazy,
  * zbierane podczas sync z bodyStructure IMAP, bez ponownego pobierania treści wiadomości. */
 export function listAttachmentsForAccount(db: Database.Database, accountId: string): AttachmentWithMessage[] {
   const rows = db

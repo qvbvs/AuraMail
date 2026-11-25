@@ -224,7 +224,7 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
         <dt className="text-ink-3">{t('contactDossier.metric_threads')}</dt>
         <dd className="text-ink tabular-nums text-right">{related.length + 1}</dd>
         <dt className="text-ink-3">{t('contactDossier.metric_last_contact')}</dt>
-        <dd className="text-ink text-right">{lastContact ? formatDate(lastContact, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}</dd>
+        <dd className="text-ink text-right">{lastContact ? formatDate(lastContact, { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</dd>
         {firstContact && related.length > 0 && (
           <>
             <dt className="text-ink-3">{t('contactDossier.metric_first_contact')}</dt>
@@ -232,7 +232,7 @@ export function ContactDossier({ onClose, onOpenCompose, width, onWidthChange }:
           </>
         )}
         <dt className="text-ink-3">{t('contactDossier.account_label')}</dt>
-        <dd className="text-ink text-right truncate">{account?.displayName || account?.email || '—'}</dd>
+        <dd className="text-ink text-right truncate">{account?.displayName || account?.email || '-'}</dd>
       </dl>
 
       <section className="px-5 py-4 border-b border-line">

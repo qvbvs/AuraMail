@@ -554,7 +554,7 @@ function ServerForm({ account }: { account: AccountSummary }): JSX.Element {
                   <li key={`${s.step}-${i}`} className="flex items-start gap-2 text-xs text-ink-2">
                     <Icon name={s.ok ? 'check_circle' : 'cancel'} className={`!text-[15px] ${s.ok ? 'text-ok' : 'text-danger'}`} />
                     <span>
-                      <span className="text-ink font-medium uppercase">{s.step}</span> — {s.message}
+                      <span className="text-ink font-medium uppercase">{s.step}</span>: {s.message}
                     </span>
                   </li>
                 ))}
@@ -676,7 +676,7 @@ function RulesBlock({ account }: { account: AccountSummary }): JSX.Element {
 
   const label = (id: string): string => {
     const f = folders.find((x) => x.id === id)
-    return f ? folderName(f, t) : '—'
+    return f ? folderName(f, t) : '-'
   }
 
   return (
@@ -805,7 +805,7 @@ function BandwidthBlock({ account }: { account: AccountSummary }): JSX.Element |
             <path d={path} fill="none" stroke="var(--ink-2)" strokeWidth="1.5" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           </svg>
           <figcaption className="text-right flex-shrink-0">
-            <span className="block font-bold tracking-[-0.02em] text-xl text-ink tabular-nums">{last !== null ? `${last.toFixed(0)} KB/s` : '—'}</span>
+            <span className="block font-bold tracking-[-0.02em] text-xl text-ink tabular-nums">{last !== null ? `${last.toFixed(0)} KB/s` : '-'}</span>
             <span className="block text-xs text-ink-3">
               {t('settings.bandwidth_sent_label')} {formatBytes(total)}, {points.length} {t('settings.no_bandwidth_measurements')}
             </span>

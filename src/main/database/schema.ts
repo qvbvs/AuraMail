@@ -1,7 +1,7 @@
 import type Database from 'better-sqlite3-multiple-ciphers'
 
 // Pełny schemat wg planu architektury (sekcja 5). Wersjonowany przez tabelę
-// schema_migrations — kolejne migracje dopisywane są jako kolejne wpisy MIGRATIONS,
+// schema_migrations - kolejne migracje dopisywane są jako kolejne wpisy MIGRATIONS,
 // nigdy przez edycję już zastosowanej migracji.
 
 interface Migration {
@@ -304,7 +304,7 @@ const MIGRATIONS: Migration[] = [
     name: 'scheduler_send_later_and_follow_up_tracking',
     up: (db) => {
       // v1 wiązał scheduled_messages z draft_message_id -> messages(id), co wymagałoby
-      // pełnego mechanizmu auto-save-drafts synchronizowanych do IMAP Drafts (plan 7.5) —
+      // pełnego mechanizmu auto-save-drafts synchronizowanych do IMAP Drafts (plan 7.5) -
       // niezbudowanego jeszcze. Dla "Wyślij później" wystarczy samodzielny payload_json
       // z pełną treścią do wysłania; pełna widoczność w folderze Drafts to osobny, przyszły
       // krok. SQLite nie pozwala usunąć kolumny/FK przez ALTER, więc tabela jest odtwarzana.
@@ -332,7 +332,7 @@ const MIGRATIONS: Migration[] = [
     version: 3,
     name: 'attachment_position_index',
     up: (db) => {
-      // Kolejność załącznika w drzewie MIME wiadomości — używana do dopasowania
+      // Kolejność załącznika w drzewie MIME wiadomości - używana do dopasowania
       // wpisu w tabeli attachments (wypełnianej podczas sync z bodyStructure) do
       // indeksu zwracanego przez mailparser przy pobieraniu (messages:downloadAttachment).
       db.exec(`ALTER TABLE attachments ADD COLUMN position INTEGER NOT NULL DEFAULT 0;`)

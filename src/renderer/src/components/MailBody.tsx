@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify'
 import { useTheme } from '../theme/ThemeContext'
 import { escapeHtml } from '../utils/quote'
 
-// Remote url(...) inside CSS — stripped (with <img> src) until the user allows remote content,
+// Remote url(...) inside CSS - stripped (with <img> src) until the user allows remote content,
 // because they work exactly like tracking pixels.
 const REMOTE_CSS_URL = /url\(\s*(['"]?)(https?:\/\/[^'")]+)\1\s*\)/gi
 

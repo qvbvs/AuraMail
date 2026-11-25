@@ -494,9 +494,9 @@ export function MessageList({ onOpenThreadDossier }: MessageListProps): JSX.Elem
               [t('messageList.props.account'), accounts.find((a) => a.id === propertiesMessage.accountId)?.email || propertiesMessage.accountId],
               [
                 t('messageList.props.folder'),
-                folderLabel(folders.find((f) => f.id === propertiesMessage.folderId)?.type ?? '', folders.find((f) => f.id === propertiesMessage.folderId)?.displayName ?? '—')
+                folderLabel(folders.find((f) => f.id === propertiesMessage.folderId)?.type ?? '', folders.find((f) => f.id === propertiesMessage.folderId)?.displayName ?? '-')
               ],
-              [t('messageList.props.date'), propertiesMessage.dateReceived ? formatDate(propertiesMessage.dateReceived) : '—'],
+              [t('messageList.props.date'), propertiesMessage.dateReceived ? formatDate(propertiesMessage.dateReceived) : '-'],
               [
                 t('messageList.props.thread'),
                 propertiesMessage.threadCount > 1 ? t('messageList.props.thread_multi', { count: propertiesMessage.threadCount }) : t('messageList.props.thread_single')

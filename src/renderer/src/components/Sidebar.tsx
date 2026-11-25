@@ -43,7 +43,7 @@ interface NavItemProps {
   countTone?: 'strong' | 'quiet'
   trailing?: React.ReactNode
   title?: string
-  /** Context marker only (e.g. the account whose folders are shown) — no filled background. */
+  /** Context marker only (e.g. the account whose folders are shown) - no filled background. */
   soft?: boolean
 }
 

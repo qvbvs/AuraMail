@@ -330,7 +330,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps): JSX.Ele
                       <li key={r.step} className="flex items-start gap-2 text-xs text-ink-2">
                         <Icon name={r.ok ? 'check_circle' : 'cancel'} className={`!text-[16px] ${r.ok ? 'text-ok' : 'text-danger'}`} />
                         <span>
-                          <span className="text-ink font-medium uppercase">{r.step}</span> — {r.message}
+                          <span className="text-ink font-medium uppercase">{r.step}</span>: {r.message}
                         </span>
                       </li>
                     ))}

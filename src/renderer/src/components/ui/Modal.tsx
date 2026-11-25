@@ -15,7 +15,7 @@ export interface ModalProps {
   closeOnBackdrop?: boolean
   dismissible?: boolean
   ariaLabel?: string
-  /** 'center' (domyślnie) — klasyczny dialog na środku. 'drawer-right' — panel
+  /** 'center' (domyślnie) - klasyczny dialog na środku. 'drawer-right' - panel
    * wysuwany z prawej krawędzi ekranu, na całą wysokość; dla treści, które nie są
    * blokującą decyzją (np. panel podglądu/analityki), mniej inwazyjny niż modal. */
   variant?: 'center' | 'drawer-right'
@@ -31,7 +31,7 @@ function tabbableElements(dialog: HTMLElement): HTMLElement[] {
 }
 
 /** Wspólna powłoka modali aplikacji (design tokens z components.css: .modal-overlay/
- * .modal-content/...) — zamiast każdego okna dialogowego z osobna wymyślającego swój
+ * .modal-content/...) - zamiast każdego okna dialogowego z osobna wymyślającego swój
  * backdrop. Obsługuje ESC, klik poza treścią, blokadę przewijania body, animację
  * zamknięcia (odtwarza się przed odmontowaniem) i mieszczenie się w viewportcie z
  * przewijaniem treści (.modal-body ma overflow-y:auto, .modal-content max-height:90vh). */
@@ -70,7 +70,7 @@ export function Modal({
       setRendered(true)
       setClosing(false)
     } else if (rendered) {
-      // Zamknięcie wywołane z zewnątrz (np. inna akcja) — pomiń animację, po prostu odmontuj.
+      // Zamknięcie wywołane z zewnątrz (np. inna akcja) - pomiń animację, po prostu odmontuj.
       setRendered(false)
       setClosing(false)
     }

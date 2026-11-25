@@ -10,7 +10,7 @@ const LEGACY_KEYTAR_SERVICE = 'MailApp'
 /**
  * Klucz szyfrujący SQLCipher: losowy per-instalacja, trzymany zaszyfrowany
  * przez Electron safeStorage (na Windows oparte o DPAPI) w pliku poza folderem
- * z bazą danych — kradzież samego pliku .db bez dostępu do tego profilu Windows
+ * z bazą danych - kradzież samego pliku .db bez dostępu do tego profilu Windows
  * jest bezużyteczna. Nigdy nie loguj tego klucza.
  */
 export function getOrCreateDbKey(userDataPath: string): string {
@@ -22,7 +22,7 @@ export function getOrCreateDbKey(userDataPath: string): string {
   }
 
   if (!safeStorage.isEncryptionAvailable()) {
-    throw new Error('safeStorage niedostępny — system nie udostępnia bezpiecznego magazynu kluczy.')
+    throw new Error('safeStorage niedostępny - system nie udostępnia bezpiecznego magazynu kluczy.')
   }
 
   const newKey = randomBytes(32).toString('hex')
@@ -31,7 +31,7 @@ export function getOrCreateDbKey(userDataPath: string): string {
   return newKey
 }
 
-/** Hasło/token konta pocztowego — wyłącznie w Windows Credential Manager, nigdy w SQLite/logach. */
+/** Hasło/token konta pocztowego - wyłącznie w Windows Credential Manager, nigdy w SQLite/logach. */
 export async function saveAccountSecret(credentialRef: string, secret: string): Promise<void> {
   await keytar.setPassword(KEYTAR_SERVICE, credentialRef, secret)
 }

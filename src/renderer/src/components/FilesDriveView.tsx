@@ -48,7 +48,7 @@ export function FilesDriveView({ onBackToMail, onOpenThread }: FilesDriveViewPro
   const { t, locale } = useTranslation()
 
   const formatDate = (iso: string | null): string => {
-    if (!iso) return '—'
+    if (!iso) return '-'
     const d = new Date(iso)
     const now = new Date()
     if (d.toDateString() === now.toDateString()) {

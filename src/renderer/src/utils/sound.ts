@@ -30,7 +30,7 @@ export function playNotificationSound(): void {
     osc1.start(now)
     osc1.stop(now + 0.35)
 
-    // Ton 2: A5 (~880 Hz) — czysta kwinta w górę
+    // Ton 2: A5 (~880 Hz) - czysta kwinta w górę
     const osc2 = audioCtx.createOscillator()
     const gain2 = audioCtx.createGain()
     osc2.type = 'sine'

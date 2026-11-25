@@ -79,7 +79,7 @@ async function processScheduledSends(db: Database.Database): Promise<void> {
     const age = now.getTime() - new Date(item.sendAt).getTime()
     if (age > STALE_SCHEDULE_THRESHOLD_MS) {
       // Plan 7.10: nie wysyłaj automatycznie czegoś zaplanowanego sprzed >24h bez
-      // potwierdzenia użytkownika — ochrona przed wysłaniem nieaktualnej wiadomości
+      // potwierdzenia użytkownika - ochrona przed wysłaniem nieaktualnej wiadomości
       // po długiej przerwie (np. laptop wyłączony przez tydzień).
       markScheduledFailedStale(db, item.id)
       continue
@@ -127,7 +127,7 @@ async function tick(db: Database.Database): Promise<void> {
   }
 }
 
-/** Jeden silnik pod trzy funkcje (send later / snooze / follow-up) — plan 7.10/7.15/9.1. */
+/** Jeden silnik pod trzy funkcje (send later / snooze / follow-up) - plan 7.10/7.15/9.1. */
 export function startScheduler(db: Database.Database): void {
   if (timer) return
   tick(db)

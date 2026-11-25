@@ -64,7 +64,7 @@ export function markScheduledSent(db: Database.Database, id: string): void {
 
 const MAX_RETRIES = 5
 
-/** Zwraca true, jeśli wpis trwale się nie powiódł (wyczerpano próby) — plan 7.10. */
+/** Zwraca true, jeśli wpis trwale się nie powiódł (wyczerpano próby) - plan 7.10. */
 export function markScheduledFailedOrRetry(db: Database.Database, id: string, error: string): boolean {
   const row = db.prepare('SELECT retry_count FROM scheduled_messages WHERE id = ?').get(id) as { retry_count: number } | undefined
   const nextCount = (row?.retry_count ?? 0) + 1
@@ -78,6 +78,6 @@ export function markScheduledFailedOrRetry(db: Database.Database, id: string, er
 
 export function markScheduledFailedStale(db: Database.Database, id: string): void {
   db.prepare(
-    `UPDATE scheduled_messages SET status = 'failed', last_error = 'Wygasł termin wysyłki (aplikacja była wyłączona zbyt długo) — wymaga ręcznej akcji' WHERE id = ?`
+    `UPDATE scheduled_messages SET status = 'failed', last_error = 'Wygasł termin wysyłki (aplikacja była wyłączona zbyt długo) - wymaga ręcznej akcji' WHERE id = ?`
   ).run(id)
 }

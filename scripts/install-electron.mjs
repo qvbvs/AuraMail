@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Zastępuje `electron`'s wbudowany postinstall (który używa `extract-zip`).
 // Na tej maszynie `extract-zip`/yauzl po cichu urywa wypakowywanie po pierwszym
-// pliku archiwum (0 błędów, exit 0, ale dist/ zawiera tylko jeden plik) — stąd
+// pliku archiwum (0 błędów, exit 0, ale dist/ zawiera tylko jeden plik) - stąd
 // AdmZip (czysty JS, synchroniczny) jako niezawodny zamiennik.
 import AdmZip from 'adm-zip'
 import { downloadArtifact } from '@electron/get'
@@ -49,7 +49,7 @@ if (process.platform !== 'win32') {
 }
 
 if (!isInstalled()) {
-  console.error(`Extraction failed — dist/${binaryName} is still missing.`)
+  console.error(`Extraction failed: dist/${binaryName} is still missing.`)
   process.exit(1)
 }
 console.log('Done.')

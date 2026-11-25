@@ -27,7 +27,7 @@ builder-effective-config.yaml
 *.rpm
 *.AppImage
 
-# Runtime userData i katalogi tymczasowe (baza SQLCipher, klucz szyfrujący, cache Chromium) —
+# Runtime userData i katalogi tymczasowe (baza SQLCipher, klucz szyfrujący, cache Chromium) -
 # generowane lokalnie przy uruchomieniu i testach e2e, nigdy nie commitować (dane pocztowe + sekrety).
 .tmp-user-data/
 .tmp-user-data*/

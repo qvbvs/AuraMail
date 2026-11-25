@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type Database from 'better-sqlite3-multiple-ciphers'
 
-/** Usuwa prefiksy Re:/Fwd:/Odp: (PL/EN, wielokrotne) i nadmiarowe spacje — plan sekcja 7.3. */
+/** Usuwa prefiksy Re:/Fwd:/Odp: (PL/EN, wielokrotne) i nadmiarowe spacje - plan sekcja 7.3. */
 export function normalizeSubject(subject: string): string {
   let s = subject.trim()
   let changed = true
@@ -25,7 +25,7 @@ interface ThreadInput {
 /**
  * Grupowanie wątków: najpierw po References/In-Reply-To (dokładne dopasowanie do
  * istniejącej wiadomości w tym samym wątku), z fallbackiem po znormalizowanym temacie
- * w obrębie konta — dla serwerów/klientów z niepełnymi/uszkodzonymi nagłówkami.
+ * w obrębie konta - dla serwerów/klientów z niepełnymi/uszkodzonymi nagłówkami.
  */
 export function resolveThreadId(db: Database.Database, input: ThreadInput): string {
   const candidateMessageIds = [input.inReplyTo, ...input.references].filter((x): x is string => Boolean(x))

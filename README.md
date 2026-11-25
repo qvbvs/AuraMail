@@ -20,21 +20,21 @@
 
 ## About
 
-AuraMail is a native email client for Windows and Linux, built around **privacy, performance, and productivity**. Your mail lives locally — encrypted, searchable offline, and free of any unnecessary cloud layer.
+AuraMail is a native email client for Windows and Linux, built around **privacy, performance, and productivity**. Your mail lives locally: encrypted, searchable offline, and free of any unnecessary cloud layer.
 
 Built with **Electron**, **React**, **TypeScript**, and **SQLCipher**.
 
 ## Features
 
-- **Encrypted by default** — SQLCipher (AES‑256) database, credentials stored via the OS keychain (DPAPI / Secret Service / KWallet)
-- **Real-time sync** — IMAP IDLE push, automatic reconnect, sleep/wake recovery
-- **Offline search** — full-text search across your mailbox via SQLite FTS5
-- **Rich composer** — Tiptap editor with checklists, code blocks, send later, and snooze
-- **One workspace** — integrated calendar, searchable address book, contact timeline, thread notes, automation rules
-- **Personalized workspace** — colour accents, message list spacing, and adjustable reading text size
-- **Keyboard-first** — global command palette (`Ctrl K`) and full keyboard navigation
-- **Multi-account** — unified inbox, each account with its own identity and color
-- **Multilingual** — English and Polish interface
+- **Encrypted by default**: SQLCipher (AES‑256) database, credentials stored via the OS keychain (DPAPI / Secret Service / KWallet)
+- **Real-time sync**: IMAP IDLE push, automatic reconnect, sleep/wake recovery
+- **Offline search**: full-text search across your mailbox via SQLite FTS5
+- **Rich composer**: Tiptap editor with checklists, code blocks, send later, and snooze
+- **One workspace**: integrated calendar, searchable address book, contact timeline, thread notes, automation rules
+- **Personalized workspace**: colour accents, message list spacing, and adjustable reading text size
+- **Keyboard-first**: global command palette (`Ctrl K`) and full keyboard navigation
+- **Multi-account**: unified inbox, each account with its own identity and color
+- **Multilingual**: English and Polish interface
 
 ## Preview
 
@@ -118,7 +118,7 @@ Tested on GNOME, KDE Plasma, XFCE and Cinnamon, under both X11 and Wayland.
 
 - Mail data is stored in a local **SQLCipher-encrypted** SQLite database (AES-256)
 - The encryption key is protected per-install via Electron's `safeStorage` (Windows DPAPI / Linux Secret Service)
-- Account credentials live in the OS credential manager via `keytar` — never in the app database
+- Account credentials live in the OS credential manager via `keytar`, never in the app database
 - Hardened Electron: `contextIsolation`, `sandbox`, no `nodeIntegration`; external links open in the system browser
 
 Found a vulnerability? See [SECURITY.md](./SECURITY.md).
@@ -153,7 +153,7 @@ npm run build:linux   # Linux
 npm run build:all     # all platforms
 ```
 
-Artifacts land in `dist/` — `.exe`/NSIS on Windows, `.AppImage`/`.deb`/`.rpm` on Linux.
+Artifacts land in `dist/`: `.exe`/NSIS on Windows, `.AppImage`/`.deb`/`.rpm` on Linux.
 
 ## Roadmap
 
@@ -165,7 +165,7 @@ Artifacts land in `dist/` — `.exe`/NSIS on Windows, `.AppImage`/`.deb`/`.rpm` 
 
 ## Contributing
 
-Contributions and bug reports are welcome — please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
+Contributions and bug reports are welcome. Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a PR.
 
 ---
 
